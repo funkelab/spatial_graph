@@ -1,0 +1,12 @@
+*.sw[pmno]
+*.pyc
+*.egg-info
+*.dat
+*.lock
+*.so
+*_wrapper.cpp
+.coverage
+build
+dist
+.vscode
+docs/_build/
