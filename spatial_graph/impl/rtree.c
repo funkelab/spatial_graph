@@ -4,7 +4,6 @@
 
 #include <string.h>
 #include <math.h>
-#include <stdbool.h>
 #include "config.h"
 #include "rtree.h"
 
