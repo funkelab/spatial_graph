@@ -5,16 +5,8 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
+#include "config.h"
 #include "rtree.h"
-
-////////////////////////////////
-
-#define DATATYPE void *
-#define DIMS 2
-#define NUMTYPE double
-#define MAXITEMS 64
-
-////////////////////////////////
 
 // used for splits
 #define MINITEMS_PERCENTAGE 10

@@ -5,6 +5,7 @@
 *.lock
 *.so
 *_wrapper.cpp
+*_wrapper.c
 .coverage
 build
 dist
