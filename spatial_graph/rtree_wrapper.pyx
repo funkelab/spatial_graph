@@ -2,17 +2,14 @@ from . cimport rtree_decl as impl
 from libc.stdio cimport printf
 
 ctypedef double coord_t
-ctypedef void* item_t
 
 cdef bint search_iterator(
     const coord_t* bb_min,
     const coord_t* bb_max,
-    const void* item, void* udata) noexcept:
-
-    cdef unsigned long item_id = <unsigned long>item;
+    const impl.item_data_t item, void* udata) noexcept:
 
     print("Found one!")
-    printf("ID: %lu, ", item_id)
+    printf("ID: %llu, ", item)
     printf("pos: (%f, %f, %f)\n", bb_min[0], bb_min[1], bb_min[2])
     return True
 
@@ -30,7 +27,7 @@ cdef class RTree:
                 self._rtree,
                 &points[i, 0],
                 NULL,
-                <item_t>i)
+                <impl.item_data_t>i)
 
     def search(self, coord_t[:] bb_min, coord_t[:] bb_max):
 
