@@ -1,17 +1,45 @@
 from . cimport rtree_decl as impl
-from libc.stdio cimport printf
+import numpy as np
+
 
 ctypedef double coord_t
 
-cdef bint search_iterator(
-    const coord_t* bb_min,
-    const coord_t* bb_max,
-    const impl.item_data_t item, void* udata) noexcept:
 
-    print("Found one!")
-    printf("ID: %llu, ", item)
-    printf("pos: (%f, %f, %f)\n", bb_min[0], bb_min[1], bb_min[2])
+cdef bint count_iterator(
+        const coord_t* bb_min,
+        const coord_t* bb_max,
+        const impl.item_data_t item,
+        void* udata
+    ) noexcept:
+
+    cdef size_t* count = <size_t*>udata
+    count[0] = count[0] + 1
     return True
+
+
+cdef bint search_iterator(
+        const coord_t* bb_min,
+        const coord_t* bb_max,
+        const impl.item_data_t item,
+        void* udata
+    ) noexcept:
+
+    cdef search_results* results = <search_results*>udata
+    results.data[results.size] = item
+    results.size += 1
+    return True
+
+
+cdef struct search_results:
+    size_t size
+    impl.item_data_t* data
+
+
+# wrap a contiguous numpy buffer, this way we can pass it to a plain C function
+cdef init_search_results_from_numpy(search_results* r, impl.item_data_t[::1] data):
+    r.size = 0
+    r.data = &data[0]
+
 
 cdef class RTree:
 
@@ -29,14 +57,33 @@ cdef class RTree:
                 NULL,
                 <impl.item_data_t>i)
 
+    def count(self, coord_t[:] bb_min, coord_t[:] bb_max):
+
+        cdef size_t num = 0
+        impl.rtree_search(
+            self._rtree,
+            &bb_min[0],
+            &bb_max[0],
+            &count_iterator,
+            &num)
+
+        return num
+
     def search(self, coord_t[:] bb_min, coord_t[:] bb_max):
+
+        cdef search_results results
+        cdef size_t num_results = self.count(bb_min, bb_max)
+        data_array = np.zeros((num_results,), dtype=np.uint64)
+        init_search_results_from_numpy(&results, data_array)
 
         impl.rtree_search(
             self._rtree,
             &bb_min[0],
             &bb_max[0],
             &search_iterator,
-            NULL)
+            &results)
+
+        return data_array
 
     def __len__(self):
 
