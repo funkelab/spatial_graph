@@ -8,7 +8,7 @@
 #define DATATYPE void *
 
 // number of spatial dimensions
-#define DIMS 2
+#define DIMS 3
 
 // type of spatial coordinates
 #define NUMTYPE double
