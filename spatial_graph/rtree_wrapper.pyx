@@ -85,6 +85,21 @@ cdef class RTree:
 
         return data_array
 
+    def delete(
+            self,
+            coord_t[:] bb_min,
+            coord_t[:] bb_max,
+            impl.item_data_t item):
+
+        cdef coord_t* bb_min_p = &bb_min[0]
+        cdef coord_t* bb_max_p = &bb_min[0] if bb_min is None else NULL
+
+        return impl.rtree_delete(
+            self._rtree,
+            bb_min_p,
+            bb_max_p,
+            item)
+
     def __len__(self):
 
         return impl.rtree_count(self._rtree)
