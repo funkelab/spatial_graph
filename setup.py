@@ -2,7 +2,7 @@ from Cython.Build import cythonize
 from setuptools import setup
 from setuptools.extension import Extension
 
-include_dirs = ["spatial_graph/impl"]
+include_dirs = ["spatial_graph/impl/rtree"]
 compile_args = ["-O3"]
 
 wrapper = Extension(

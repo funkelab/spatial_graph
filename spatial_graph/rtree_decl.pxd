@@ -1,9 +1,9 @@
-cdef extern from 'impl/config.h':
+cdef extern from 'impl/rtree/config.h':
 
     ctypedef unsigned long long item_data_t
     ctypedef double coord_t
 
-cdef extern from 'impl/rtree.h':
+cdef extern from 'impl/rtree/rtree.h':
 
 
     rtree* rtree_new()
@@ -18,7 +18,7 @@ cdef extern from 'impl/rtree.h':
 
     bint rtree_delete(rtree* tr, const coord_t* min, const coord_t* max, const item_data_t data)
 
-cdef extern from 'impl/rtree.c':
+cdef extern from 'impl/rtree/rtree.c':
 
     cdef struct rtree:
         size_t count
