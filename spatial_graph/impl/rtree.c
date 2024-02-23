@@ -668,8 +668,11 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
     *shrunk = false;
     if (node->kind == LEAF) {
         for (int i = 0; i < node->count; i++) {
-            if (!rect_equals_bin(ir, &node->rects[i])) {
-                // Must be exactly the same, binary comparison.
+            // the original code used rect_equals_bin here, but according to the
+            // documentation of rtree_delete, this should check whether the item
+            // is contained in the search area
+            if (!rect_contains(ir, &node->rects[i])) {
+                // not contained under this node, keep going
                 continue;
             }
             int cmp = compare ?
