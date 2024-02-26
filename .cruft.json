@@ -6,7 +6,7 @@
     "cookiecutter": {
       "full_name": "Jan Funke",
       "email": "funkej@janelia.hhmi.org",
-      "github_username": "funkey",
+      "github_username": "funkelab",
       "project_name": "spatial_graph",
       "project_slug": "spatial_graph",
       "project_short_description": "A spatial graph datastructure for python.",

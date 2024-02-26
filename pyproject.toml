@@ -29,8 +29,8 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/funkey/spatial_graph"
-repository = "https://github.com/funkey/spatial_graph"
+homepage = "https://github.com/funkelab/spatial_graph"
+repository = "https://github.com/funkelab/spatial_graph"
 
 [tool.setuptools]
 packages = ["spatial_graph"]
