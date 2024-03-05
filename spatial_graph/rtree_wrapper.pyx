@@ -48,14 +48,22 @@ cdef class RTree:
     def __cinit__(self):
         self._rtree = impl.rtree_new()
 
-    def insert_points(self, coord_t[:, ::1] points):
+    def insert_point(self, id, coord_t[::1] point):
+
+        impl.rtree_insert(
+            self._rtree,
+            &point[0],
+            NULL,
+            <impl.item_data_t>id)
+
+    def insert_points(self, unsigned long[::1] ids, coord_t[:, ::1] points):
 
         for i in range(points.shape[0]):
             impl.rtree_insert(
                 self._rtree,
                 &points[i, 0],
                 NULL,
-                <impl.item_data_t>i)
+                <impl.item_data_t>ids[i])
 
     def count(self, coord_t[::1] bb_min, coord_t[::1] bb_max):
 
