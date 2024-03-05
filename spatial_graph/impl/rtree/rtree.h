@@ -39,13 +39,13 @@ void rtree_set_item_callbacks(struct rtree *tr,
     bool (*clone)(const item_data_t item, item_data_t *into, void *udata),
     void (*free)(const item_data_t item, void *udata));
 
-// rtree_set_udata sets the user-defined data. 
+// rtree_set_udata sets the user-defined data.
 //
-// This should be called once after rtree_new() and is only used for 
+// This should be called once after rtree_new() and is only used for
 // the item callbacks as defined in rtree_set_item_callbacks().
 void rtree_set_udata(struct rtree *tr, void *udata);
 
-// rtree_insert inserts an item into the rtree. 
+// rtree_insert inserts an item into the rtree.
 //
 // This operation performs a copy of the data that is pointed to in the second
 // and third arguments. The R-tree expects a rectangle, which is two arrays of
@@ -64,20 +64,20 @@ bool rtree_insert(struct rtree *tr, const coord_t *min, const coord_t *max, cons
 //
 // Returning false from the iter will stop the search.
 void rtree_search(const struct rtree *tr, const coord_t *min, const coord_t *max,
-    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, void *udata), 
+    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, void *udata),
     void *udata);
 
 // rtree_scan iterates over every item in the rtree.
 //
 // Returning false from the iter will stop the scan.
 void rtree_scan(const struct rtree *tr,
-    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, void *udata), 
+    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, void *udata),
     void *udata);
 
 // rtree_count returns the number of items in the rtree.
 size_t rtree_count(const struct rtree *tr);
 
-// rtree_delete deletes an item from the rtree. 
+// rtree_delete deletes an item from the rtree.
 //
 // This searches the tree for an item that is contained within the provided
 // rectangle, and perform a binary comparison of its data to the provided

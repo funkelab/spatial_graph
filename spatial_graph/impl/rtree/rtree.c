@@ -36,7 +36,7 @@ static int rc_fetch_add(rc_t *ptr, int val) {
     *ptr += val;
     return rc;
 }
-#else 
+#else
 #include <stdatomic.h>
 typedef atomic_int rc_t;
 static int rc_load(rc_t *ptr, bool relaxed) {
@@ -134,7 +134,7 @@ static struct node *node_copy(struct rtree *tr, struct node *node) {
             int n = 0;
             bool oom = false;
             for (int i = 0; i < node2->count; i++) {
-                if (!tr->item_clone(node->datas[i].data, 
+                if (!tr->item_clone(node->datas[i].data,
                     (item_data_t*)&node2->datas[i].data, tr->udata))
                 {
                     oom = true;
@@ -197,12 +197,12 @@ static coord_t rect_area(const struct rect *rect) {
 }
 
 // return the area of two rects expanded
-static coord_t rect_unioned_area(const struct rect *rect, 
+static coord_t rect_unioned_area(const struct rect *rect,
     const struct rect *other)
 {
     coord_t result = 1;
     for (int i = 0; i < DIMS; i++) {
-        result *= (max0(rect->max[i], other->max[i]) - 
+        result *= (max0(rect->max[i], other->max[i]) -
                    min0(rect->min[i], other->min[i]));
     }
     return result;
@@ -228,7 +228,7 @@ static bool rect_intersects(const struct rect *rect, const struct rect *other) {
 
 static bool rect_onedge(const struct rect *rect, const struct rect *other) {
     for (int i = 0; i < DIMS; i++) {
-        if (feq(rect->min[i], other->min[i]) || 
+        if (feq(rect->min[i], other->min[i]) ||
             feq(rect->max[i], other->max[i]))
         {
             return true;
@@ -239,7 +239,7 @@ static bool rect_onedge(const struct rect *rect, const struct rect *other) {
 
 static bool rect_equals(const struct rect *rect, const struct rect *other) {
     for (int i = 0; i < DIMS; i++) {
-        if (!feq(rect->min[i], other->min[i]) || 
+        if (!feq(rect->min[i], other->min[i]) ||
             !feq(rect->max[i], other->max[i]))
         {
             return false;
@@ -292,7 +292,7 @@ struct rect4 {
     coord_t all[DIMS*2];
 };
 
-static void node_qsort(struct node *node, int s, int e, int index, bool rev) { 
+static void node_qsort(struct node *node, int s, int e, int index, bool rev) {
     int nrects = e - s;
     if (nrects < 2) {
         return;
@@ -328,7 +328,7 @@ static void node_sort_by_axis(struct node *node, int axis, bool rev, bool max) {
     node_qsort(node, 0, node->count, by_index, rev);
 }
 
-static void node_move_rect_at_index_into(struct node *from, int index, 
+static void node_move_rect_at_index_into(struct node *from, int index,
     struct node *into)
 {
     into->rects[into->count] = from->rects[index];
@@ -344,8 +344,8 @@ static void node_move_rect_at_index_into(struct node *from, int index,
     into->count++;
 }
 
-static bool node_split_largest_axis_edge_snap(struct rtree *tr, 
-    struct rect *rect, struct node *node, struct node **right_out) 
+static bool node_split_largest_axis_edge_snap(struct rtree *tr,
+    struct rect *rect, struct node *node, struct node **right_out)
 {
     int axis = rect_largest_axis(rect);
     struct node *right = node_new(tr, node->kind);
@@ -366,13 +366,13 @@ static bool node_split_largest_axis_edge_snap(struct rtree *tr,
     if (node->count < MINITEMS) {
         // reverse sort by min axis
         node_sort_by_axis(right, axis, true, false);
-        do { 
+        do {
             node_move_rect_at_index_into(right, right->count-1, node);
         } while (node->count < MINITEMS);
     } else if (right->count < MINITEMS) {
         // reverse sort by max axis
         node_sort_by_axis(node, axis, true, true);
-        do { 
+        do {
             node_move_rect_at_index_into(node, node->count-1, right);
         } while (right->count < MINITEMS);
     }
@@ -381,12 +381,12 @@ static bool node_split_largest_axis_edge_snap(struct rtree *tr,
 }
 
 static bool node_split(struct rtree *tr, struct rect *rect, struct node *node,
-    struct node **right) 
+    struct node **right)
 {
     return node_split_largest_axis_edge_snap(tr, rect, node, right);
 }
 
-static int node_choose_least_enlargement(const struct node *node, 
+static int node_choose_least_enlargement(const struct node *node,
     const struct rect *ir)
 {
     int j = 0;
@@ -404,7 +404,7 @@ static int node_choose_least_enlargement(const struct node *node,
     return j;
 }
 
-static int node_choose(struct rtree *tr, const struct node *node, 
+static int node_choose(struct rtree *tr, const struct node *node,
     const struct rect *rect, int depth)
 {
 #ifdef USE_PATHHINT
@@ -441,7 +441,7 @@ static struct rect node_rect_calc(const struct node *node) {
 }
 
 // node_insert returns false if out of memory
-static bool node_insert(struct rtree *tr, struct rect *nr, struct node *node, 
+static bool node_insert(struct rtree *tr, struct rect *nr, struct node *node,
     struct rect *ir, struct item item, int depth, bool *split)
 {
     if (node->kind == LEAF) {
@@ -459,7 +459,7 @@ static bool node_insert(struct rtree *tr, struct rect *nr, struct node *node,
     // Choose a subtree for inserting the rectangle.
     int i = node_choose(tr, node, ir, depth);
     cow_node_or(node->nodes[i], return false);
-    if (!node_insert(tr, &node->rects[i], node->nodes[i], ir, item, depth+1, 
+    if (!node_insert(tr, &node->rects[i], node->nodes[i], ir, item, depth+1,
         split))
     {
         return false;
@@ -485,7 +485,7 @@ static bool node_insert(struct rtree *tr, struct rect *nr, struct node *node,
     return node_insert(tr, nr, node, ir, item, depth, split);
 }
 
-struct rtree *rtree_new_with_allocator(void *(*_malloc)(size_t), 
+struct rtree *rtree_new_with_allocator(void *(*_malloc)(size_t),
     void (*_free)(void*)
 ) {
     _malloc = _malloc ? _malloc : malloc;
@@ -510,14 +510,14 @@ void rtree_set_item_callbacks(struct rtree *tr,
     tr->item_free = free;
 }
 
-bool rtree_insert(struct rtree *tr, const coord_t *min, 
-    const coord_t *max, const item_data_t data) 
+bool rtree_insert(struct rtree *tr, const coord_t *min,
+    const coord_t *max, const item_data_t data)
 {
     // copy input rect
     struct rect rect;
     memcpy(&rect.min[0], min, sizeof(coord_t)*DIMS);
     memcpy(&rect.max[0], max?max:min, sizeof(coord_t)*DIMS);
-    
+
     // copy input data
     struct item item;
     if (tr->item_clone) {
@@ -580,14 +580,14 @@ void rtree_free(struct rtree *tr) {
 }
 
 static bool node_search(struct node *node, struct rect *rect,
-    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, 
-        void *udata), 
-    void *udata) 
+    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data,
+        void *udata),
+    void *udata)
 {
     if (node->kind == LEAF) {
         for (int i = 0; i < node->count; i++) {
             if (rect_intersects(&node->rects[i], rect)) {
-                if (!iter(node->rects[i].min, node->rects[i].max, 
+                if (!iter(node->rects[i].min, node->rects[i].max,
                     node->datas[i].data, udata))
                 {
                     return false;
@@ -606,10 +606,10 @@ static bool node_search(struct node *node, struct rect *rect,
     return true;
 }
 
-void rtree_search(const struct rtree *tr, const coord_t min[], 
+void rtree_search(const struct rtree *tr, const coord_t min[],
     const coord_t max[],
-    bool (*iter)(const coord_t min[], const coord_t max[], const item_data_t data, 
-        void *udata), 
+    bool (*iter)(const coord_t min[], const coord_t max[], const item_data_t data,
+        void *udata),
     void *udata)
 {
     // copy input rect
@@ -623,13 +623,13 @@ void rtree_search(const struct rtree *tr, const coord_t min[],
 }
 
 static bool node_scan(struct node *node,
-    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, 
-        void *udata), 
-    void *udata) 
+    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data,
+        void *udata),
+    void *udata)
 {
     if (node->kind == LEAF) {
         for (int i = 0; i < node->count; i++) {
-            if (!iter(node->rects[i].min, node->rects[i].max, 
+            if (!iter(node->rects[i].min, node->rects[i].max,
                 node->datas[i].data, udata))
             {
                 return false;
@@ -645,9 +645,9 @@ static bool node_scan(struct node *node,
     return true;
 }
 
-void rtree_scan(const struct rtree *tr, 
-    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, 
-        void *udata), 
+void rtree_scan(const struct rtree *tr,
+    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data,
+        void *udata),
     void *udata)
 {
     if (tr->root) {
@@ -659,7 +659,7 @@ size_t rtree_count(const struct rtree *tr) {
     return tr->count;
 }
 
-static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node, 
+static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
     struct rect *ir, struct item item, int depth, bool *removed, bool *shrunk,
     int (*compare)(const item_data_t a, const item_data_t b, void *udata),
     void *udata)
@@ -693,7 +693,7 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
                 // We need to recalculate the node rect.
                 *nr = node_rect_calc(node);
                 // Notify the caller that we shrunk the rect.
-                *shrunk = true; 
+                *shrunk = true;
             }
             *removed = true;
             return true;
@@ -706,7 +706,7 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
     if (h < node->count) {
         if (rect_contains(&node->rects[h], ir)) {
             cow_node_or(node->nodes[h], return false);
-            if (!node_delete(tr, &node->rects[h], node->nodes[h], ir, item, 
+            if (!node_delete(tr, &node->rects[h], node->nodes[h], ir, item,
                 depth+1,removed, shrunk, compare, udata))
             {
                 return false;
@@ -758,7 +758,7 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 }
 
 // returns false if out of memory
-static bool rtree_delete0(struct rtree *tr, const coord_t *min, 
+static bool rtree_delete0(struct rtree *tr, const coord_t *min,
     const coord_t *max, const item_data_t data,
     int (*compare)(const item_data_t a, const item_data_t b, void *udata),
     void *udata)
@@ -778,7 +778,7 @@ static bool rtree_delete0(struct rtree *tr, const coord_t *min,
     bool removed = false;
     bool shrunk = false;
     cow_node_or(tr->root, return false);
-    if (!node_delete(tr, &tr->rect, tr->root, &rect, item, 0, &removed, &shrunk, 
+    if (!node_delete(tr, &tr->rect, tr->root, &rect, item, 0, &removed, &shrunk,
         compare, udata))
     {
         return false;
@@ -807,13 +807,13 @@ static bool rtree_delete0(struct rtree *tr, const coord_t *min,
     return true;
 }
 
-bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max, 
+bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max,
     const item_data_t data)
 {
     return rtree_delete0(tr, min, max, data, NULL, NULL);
 }
 
-bool rtree_delete_with_comparator(struct rtree *tr, const coord_t *min, 
+bool rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
     const coord_t *max, const item_data_t data,
     int (*compare)(const item_data_t a, const item_data_t b, void *udata),
     void *udata)
@@ -828,7 +828,7 @@ struct rtree *rtree_clone(struct rtree *tr) {
     memcpy(tr2, tr, sizeof(struct rtree));
     if (tr2->root) rc_fetch_add(&tr2->root->rc, 1);
     return tr2;
-} 
+}
 
 void rtree_opt_relaxed_atomics(struct rtree *tr) {
     tr->relaxed = true;

@@ -6,7 +6,7 @@
 // number of spatial dimensions
 #define DIMS 3
 
-// user-defined data to store for each item (this is also used to identify items 
+// user-defined data to store for each item (this is also used to identify items
 // for deletion)
 typedef unsigned long long item_data_t;
 
