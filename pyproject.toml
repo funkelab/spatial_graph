@@ -16,7 +16,7 @@ authors = [
     { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = ["witty"]
 
 [project.optional-dependencies]
 dev = [

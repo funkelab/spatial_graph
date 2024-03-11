@@ -81,6 +81,7 @@ cdef class RTree:
 
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
+        # TODO: initialize with node dtype equivalent
         data_array = np.zeros((num_results,), dtype=np.uint64)
         init_search_results_from_numpy(&results, data_array)
 
