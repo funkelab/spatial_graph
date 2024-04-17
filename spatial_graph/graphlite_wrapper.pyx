@@ -2,6 +2,7 @@ from cython cimport view
 from cython.operator cimport dereference as deref, preincrement as inc
 from libc.stdint cimport *
 from libcpp.utility cimport pair
+import numpy as np
 
 
 cdef extern from *:
@@ -158,8 +159,13 @@ EDGE_DATA_ARRAYS_POINTERS_SET
                 inc(it)
             inc(node_it)
 
-    def node_data(self, NodeType node):
-        return self._graph.node_prop(node)
+    def nodes_data(self, NodeType[::1] nodes):
+        for node in nodes:
+            yield node, self._graph.node_prop(node)
+
+NODE_DATA_BY_NAME
+
+NODES_DATA_BY_NAME
 
     def edge_data(self, NodeType u, NodeType v):
         return self._graph.edge_prop(u, v)
