@@ -1,125 +1,13 @@
 import witty
 from pathlib import Path
 import numpy as np
-
-
-def is_array(dtype):
-    if "[" in dtype:
-        if "]" not in dtype:
-            raise RuntimeError(f"invalid array(?) dtype {dtype}")
-        return True
-    return False
-
-
-def parse_array_dtype(dtype):
-    dtype, size = dtype.split("[")
-    size = int(size.split("]")[0])
-
-    return dtype, size
-
-
-def length_from_dtype(dtype):
-    if is_array(dtype):
-        return str(parse_array_dtype(dtype)[1])
-    else:
-        return ""
-
-
-def strip_array(dtype):
-    if is_array(dtype):
-        return parse_array_dtype(dtype)[0]
-    else:
-        return dtype
-
-
-def dtype_to_pyxtype(dtype, use_memory_view=False, as_arrays=False):
-    """Convert from numpy-like dtype strings to their equivalent C/C++/PYX types.
-
-    Args:
-
-        use_memory_view:
-
-            If set, will produce "[::1]" instead of "[dim]" for array types.
-
-        as_arrays:
-
-            Create arrays of the types, e.g., "int32_t[::1]" instead of
-            "int32_t" for dtype "int32".
-    """
-
-    # is this an array type?
-    if is_array(dtype):
-        dtype, size = parse_array_dtype(dtype)
-        if as_arrays:
-            suffix = "[:, ::1]"
-        else:
-            if use_memory_view:
-                suffix = "[::1]"
-            else:
-                suffix = f"[{size}]"
-    else:
-        suffix = "" if not as_arrays else "[::1]"
-
-    if dtype == "float32" or dtype == "float":
-        dtype = "float"
-    elif dtype == "float64" or dtype == "double":
-        dtype = "double"
-    else:
-        # this might not work for all of them, this is just a fallback
-        dtype = np.dtype(dtype).name + "_t"
-
-    return dtype + suffix
-
-
-def dtypes_to_struct(struct_name, dtypes):
-    pyx_code = f"cdef struct {struct_name}:\n"
-    for name, dtype in dtypes.items():
-        pyx_code += f"    {dtype_to_pyxtype(dtype)} {name}\n"
-    return pyx_code
-
-
-def dtypes_to_arguments(dtypes, as_arrays=False):
-    return ", ".join(
-        [
-            f"{dtype_to_pyxtype(dtype, use_memory_view=True, as_arrays=as_arrays)} "
-            f"{name}"
-            for name, dtype in dtypes.items()
-        ]
-    )
-
-
-def dtypes_to_array_pointers(
-    dtypes, indent, definition_only=False, assignment_only=False, array_index=None
-):
-    pyx_code = ""
-
-    for name, dtype in dtypes.items():
-        if is_array(dtype):
-            dtype, size = parse_array_dtype(dtype)
-            pyx_code = "    " * indent
-            if not assignment_only:
-                pyx_code += f"cdef {dtype_to_pyxtype(dtype)}[{size}] "
-            pyx_code += f"_p_{name}"
-            if not definition_only:
-                if array_index:
-                    pyx_code += f" = &{name}[{array_index}, 0]\n"
-                else:
-                    pyx_code += f" = &{name}[0]\n"
-            else:
-                pyx_code += "\n"
-
-    return pyx_code
-
-
-def dtypes_to_array_pointer_names(dtypes, array_index=None):
-    return ", ".join(
-        [
-            f"_p_{name}"
-            if is_array(dtype)
-            else (f"{name}[{array_index}]" if array_index else name)
-            for name, dtype in dtypes.items()
-        ]
-    )
+from .dtypes import (
+    DType,
+    dtypes_to_struct,
+    dtypes_to_arguments,
+    dtypes_to_array_pointers,
+    dtypes_to_array_pointer_names,
+)
 
 
 node_data_template = """
@@ -140,8 +28,8 @@ nodes_data_template = """
             num_nodes = self._graph.size()
         else:
             num_nodes = len(nodes)
-        data = np.empty(shape=(num_nodes, LENGTH), dtype="DTYPE")
-        cdef PYXDTYPE view = data
+        data = np.empty(shape=(num_nodes,) + SHAPE, dtype="NPTYPE")
+        cdef PYXTYPE view = data
 
         # all nodes requested
         if nodes is None:
@@ -162,15 +50,26 @@ class Graph:
         cls,
         node_dtype,
         node_attr_dtypes,
-        edge_attr_dtypes,
+        edge_attr_dtypes=None,
         directed=False,
         *args,
         **kwargs,
     ):
+        if edge_attr_dtypes is None:
+            edge_attr_dtypes = {}
+
+        node_dtype = DType(node_dtype)
+        node_attr_dtypes = {
+            name: DType(dtype) for name, dtype in node_attr_dtypes.items()
+        }
+        edge_attr_dtypes = {
+            name: DType(dtype) for name, dtype in edge_attr_dtypes.items()
+        }
+
         src_dir = Path(__file__).parent
         graphlite_pyx = open(src_dir / "graphlite_wrapper.pyx").read()
         graphlite_pyx = graphlite_pyx.replace(
-            "NODE_TYPE_DECLARATION", f"ctypedef {dtype_to_pyxtype(node_dtype)} NodeType"
+            "NODE_TYPE_DECLARATION", f"ctypedef {node_dtype.to_pyxtype()} NodeType"
         )
         graphlite_pyx = graphlite_pyx.replace(
             "NODE_DATA_DECLARATION", dtypes_to_struct("NodeData", node_attr_dtypes)
@@ -248,9 +147,9 @@ class Graph:
         nodes_data_by_name = "\n\n".join(
             [
                 nodes_data_template.replace("NAME", name)
-                .replace("PYXDTYPE", dtype_to_pyxtype(dtype, as_arrays=True))
-                .replace("DTYPE", strip_array(dtype))
-                .replace("LENGTH", length_from_dtype(dtype))
+                .replace("PYXTYPE", dtype.to_pyxtype(as_arrays=True))
+                .replace("NPTYPE", dtype.base)
+                .replace("SHAPE", str(dtype.shape))
                 for name, dtype in node_attr_dtypes.items()
             ]
         )
