@@ -161,6 +161,33 @@ EDGE_DATA_ARRAYS_POINTERS_SET
                 inc(it)
             inc(node_it)
 
+    # same as above, but for fast access to edges incident to an array of nodes
+    def edges_by_nodes(self, NodeType[::1] nodes):
+
+        # iterate over all edges by iterating over all nodes u and their
+        # neighbors v with u < v
+        cdef pair[NeighborsIterator, NeighborsIterator] view
+        cdef NodeType u, v
+        cdef Py_ssize_t i = 0
+
+        num_edges = self._num_edges(nodes)
+        data = np.empty(shape=(num_edges, 2), dtype="NODE_NPTYPE")
+        cdef NodeType[:, ::1] edges = data
+
+        for u in nodes:
+            view = self._graph.neighbors(u)
+            it = view.first
+            end = view.second
+            while it != end:
+                v = deref(it).first
+                if u < v:
+                    edges[i, 0] = u
+                    edges[i, 1] = v
+                    i += 1
+                inc(it)
+
+        return data
+
     def nodes_data(self, NodeType[::1] nodes):
         for node in nodes:
             yield node, self._graph.node_prop(node)
@@ -211,3 +238,6 @@ EDGES_DATA_BY_NAME
 
     def num_edges(self):
         return self._graph.num_edges()
+
+    def _num_edges(self, NodeType[::1] nodes):
+        return np.sum(self.count_neighbors(nodes))

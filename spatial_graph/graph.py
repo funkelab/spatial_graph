@@ -121,6 +121,7 @@ class Graph:
         graphlite_pyx = graphlite_pyx.replace(
             "NODE_TYPE_DECLARATION", f"ctypedef {node_dtype.to_pyxtype()} NodeType"
         )
+        graphlite_pyx = graphlite_pyx.replace("NODE_NPTYPE", node_dtype.base)
         graphlite_pyx = graphlite_pyx.replace(
             "NODE_DATA_DECLARATION", dtypes_to_struct("NodeData", node_attr_dtypes)
         )
@@ -330,9 +331,7 @@ class EdgeAttrsView:
         elif isinstance(edges, tuple):
             # a single edge
             for name in graph.edge_attr_dtypes.keys():
-                super().__setattr__(
-                    f"attr_{name}", getattr(graph, f"edge_data_{name}")
-                )
+                super().__setattr__(f"attr_{name}", getattr(graph, f"edge_data_{name}"))
 
         # at this point, edges is either
         # 1. a nx2 numpy array

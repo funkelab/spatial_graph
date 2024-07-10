@@ -44,8 +44,10 @@ class SpatialGraph(Graph):
         if edge_inclusion not in SpatialGraph.edge_inclusion_values:
             raise ValueError("edge_inclusion has to be in {edge_inclusion_values}")
 
+        edges = self.edges_by_nodes(nodes)
+
         if edge_inclusion == "incident":
-            return nodes, []  # TODO
+            return nodes, edges
         elif edge_inclusion == "leaving":
             return nodes, []  # TODO
         elif edge_inclusion == "entering":
