@@ -58,6 +58,8 @@ cdef extern from *:
 
         size_t size() const
 
+        size_t num_edges() const
+
         Iterator begin()
 
         Iterator end()
@@ -167,8 +169,14 @@ NODE_DATA_BY_NAME
 
 NODES_DATA_BY_NAME
 
-    def edge_data(self, NodeType u, NodeType v):
-        return self._graph.edge_prop(u, v)
+    def edges_data(self, NodeType[::1] us, NodeType[::1] vs):
+        num_edges = len(us)
+        for i in range(num_edges):
+            yield self._graph.edge_prop(us[i], vs[i])
+
+EDGE_DATA_BY_NAME
+
+EDGES_DATA_BY_NAME
 
     def remove_node(self, NodeType node):
         self._graph.remove_nodes(node)
@@ -200,3 +208,6 @@ NODES_DATA_BY_NAME
 
     def __len__(self):
         return self._graph.size()
+
+    def num_edges(self):
+        return self._graph.num_edges()
