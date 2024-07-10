@@ -1,5 +1,6 @@
 from .graph import Graph
-from .rtree_wrapper import RTree
+from .rtree import RTree
+from .dtypes import DType
 
 
 class SpatialGraph(Graph):
@@ -21,7 +22,8 @@ class SpatialGraph(Graph):
 
         self.ndims = ndims
         self.position_attr = position_attr
-        self._rtree = RTree()
+        coord_dtype = DType(node_attr_dtypes[position_attr]).base
+        self._rtree = RTree(node_dtype, coord_dtype, ndims)
 
     def add_node(self, node, **kwargs):
         position = self._get_position(kwargs)

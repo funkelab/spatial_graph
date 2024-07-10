@@ -1,14 +1,49 @@
-from . cimport rtree_decl as impl
+from libc.stdint cimport *
 import numpy as np
 
 
-ctypedef double coord_t
+ctypedef NODE_TYPE item_data_t
+ctypedef COORD_TYPE coord_t
+ctypedef int bool
 
+cdef extern from *:
+    """
+    #define DIMS NUM_DIMS
+    typedef NODE_TYPE item_data_t;
+    typedef COORD_TYPE coord_t;
+
+    #include "impl/rtree/rtree.h"
+    #include "impl/rtree/rtree.c"
+
+    """
+    cdef struct rtree
+    cdef rtree *rtree_new()
+    cdef bool rtree_insert(
+        rtree *tr,
+        const coord_t *min,
+        const coord_t *max,
+        const item_data_t data)
+    cdef void rtree_search(
+        const rtree *tr,
+        const coord_t *min,
+        const coord_t *max,
+        bool (*iter)(
+            const coord_t *min,
+            const coord_t *max,
+            const item_data_t data,
+            void *udata),
+        void *udata)
+    cdef bool rtree_delete(
+        rtree *tr,
+        const coord_t *min,
+        const coord_t *max,
+        const item_data_t data)
+    cdef size_t rtree_count(const rtree *tr)
 
 cdef bint count_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
-        const impl.item_data_t item,
+        const item_data_t item,
         void* udata
     ) noexcept:
 
@@ -20,7 +55,7 @@ cdef bint count_iterator(
 cdef bint search_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
-        const impl.item_data_t item,
+        const item_data_t item,
         void* udata
     ) noexcept:
 
@@ -32,43 +67,43 @@ cdef bint search_iterator(
 
 cdef struct search_results:
     size_t size
-    impl.item_data_t* data
+    item_data_t* data
 
 
 # wrap a contiguous numpy buffer, this way we can pass it to a plain C function
-cdef init_search_results_from_numpy(search_results* r, impl.item_data_t[::1] data):
+cdef init_search_results_from_numpy(search_results* r, item_data_t[::1] data):
     r.size = 0
     r.data = &data[0]
 
 
 cdef class RTree:
 
-    cdef impl.rtree* _rtree
+    cdef rtree* _rtree
 
     def __cinit__(self):
-        self._rtree = impl.rtree_new()
+        self._rtree = rtree_new()
 
     def insert_point(self, id, coord_t[::1] point):
 
-        impl.rtree_insert(
+        rtree_insert(
             self._rtree,
             &point[0],
             NULL,
-            <impl.item_data_t>id)
+            <item_data_t>id)
 
     def insert_points(self, unsigned long[::1] ids, coord_t[:, ::1] points):
 
         for i in range(points.shape[0]):
-            impl.rtree_insert(
+            rtree_insert(
                 self._rtree,
                 &points[i, 0],
                 NULL,
-                <impl.item_data_t>ids[i])
+                <item_data_t>ids[i])
 
     def count(self, coord_t[::1] bb_min, coord_t[::1] bb_max):
 
         cdef size_t num = 0
-        impl.rtree_search(
+        rtree_search(
             self._rtree,
             &bb_min[0],
             &bb_max[0],
@@ -82,13 +117,12 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        # TODO: initialize with node dtype equivalent
-        data_array = np.zeros((num_results,), dtype=np.uint64)
+        data_array = np.zeros((num_results,), dtype="NODE_DTYPE")
         if num_results == 0:
             return data_array
         init_search_results_from_numpy(&results, data_array)
 
-        impl.rtree_search(
+        rtree_search(
             self._rtree,
             &bb_min[0],
             &bb_max[0],
@@ -101,12 +135,12 @@ cdef class RTree:
             self,
             coord_t[::1] bb_min,
             coord_t[::1] bb_max,
-            impl.item_data_t item):
+            item_data_t item):
 
         cdef coord_t* bb_min_p = &bb_min[0]
         cdef coord_t* bb_max_p = &bb_min[0] if bb_min is None else NULL
 
-        return impl.rtree_delete(
+        return rtree_delete(
             self._rtree,
             bb_min_p,
             bb_max_p,
@@ -114,4 +148,4 @@ cdef class RTree:
 
     def __len__(self):
 
-        return impl.rtree_count(self._rtree)
+        return rtree_count(self._rtree)
