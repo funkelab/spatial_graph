@@ -1,7 +1,7 @@
 import witty
 from pathlib import Path
 import numpy as np
-from .dtypes import (
+from ..dtypes import (
     DType,
     dtypes_to_struct,
     dtypes_to_arguments,
@@ -117,72 +117,72 @@ class Graph:
         }
 
         src_dir = Path(__file__).parent
-        graphlite_pyx = open(src_dir / "graphlite_wrapper.pyx").read()
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = open(src_dir / "src_wrapper.pyx").read()
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_TYPE_DECLARATION", f"ctypedef {node_dtype.to_pyxtype()} NodeType"
         )
-        graphlite_pyx = graphlite_pyx.replace("NODE_NPTYPE", node_dtype.base)
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace("NODE_NPTYPE", node_dtype.base)
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_DECLARATION", dtypes_to_struct("NodeData", node_attr_dtypes)
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_DECLARATION", dtypes_to_struct("EdgeData", edge_attr_dtypes)
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARGS", dtypes_to_arguments(node_attr_dtypes)
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARGS", dtypes_to_arguments(edge_attr_dtypes)
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAY_ARGS",
             dtypes_to_arguments(node_attr_dtypes, as_arrays=True),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARRAY_ARGS",
             dtypes_to_arguments(edge_attr_dtypes, as_arrays=True),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAY_POINTERS_SET",
             dtypes_to_array_pointers(node_attr_dtypes, indent=2),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAY_POINTERS_NAMES",
             dtypes_to_array_pointer_names(node_attr_dtypes),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAYS_POINTERS_DEF",
             dtypes_to_array_pointers(node_attr_dtypes, indent=2, definition_only=True),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAYS_POINTERS_SET",
             dtypes_to_array_pointers(
                 node_attr_dtypes, indent=3, assignment_only=True, array_index="i"
             ),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAYS_POINTERS_NAMES",
             dtypes_to_array_pointer_names(node_attr_dtypes, array_index="i"),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARRAY_POINTERS_SET",
             dtypes_to_array_pointers(edge_attr_dtypes, indent=2),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARRAY_POINTERS_NAMES",
             dtypes_to_array_pointer_names(edge_attr_dtypes),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARRAYS_POINTERS_DEF",
             dtypes_to_array_pointers(edge_attr_dtypes, indent=2, definition_only=True),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARRAYS_POINTERS_SET",
             dtypes_to_array_pointers(
                 edge_attr_dtypes, indent=3, assignment_only=True, array_index="i"
             ),
         )
-        graphlite_pyx = graphlite_pyx.replace(
+        wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARRAYS_POINTERS_NAMES",
             dtypes_to_array_pointer_names(edge_attr_dtypes, array_index="i"),
         )
@@ -193,7 +193,7 @@ class Graph:
                 for name in node_attr_dtypes.keys()
             ]
         )
-        graphlite_pyx = graphlite_pyx.replace("NODE_DATA_BY_NAME", node_data_by_name)
+        wrapper_pyx = wrapper_pyx.replace("NODE_DATA_BY_NAME", node_data_by_name)
 
         nodes_data_by_name = "\n\n".join(
             [
@@ -204,7 +204,7 @@ class Graph:
                 for name, dtype in node_attr_dtypes.items()
             ]
         )
-        graphlite_pyx = graphlite_pyx.replace("NODES_DATA_BY_NAME", nodes_data_by_name)
+        wrapper_pyx = wrapper_pyx.replace("NODES_DATA_BY_NAME", nodes_data_by_name)
 
         edge_data_by_name = "\n\n".join(
             [
@@ -212,7 +212,7 @@ class Graph:
                 for name in edge_attr_dtypes.keys()
             ]
         )
-        graphlite_pyx = graphlite_pyx.replace("EDGE_DATA_BY_NAME", edge_data_by_name)
+        wrapper_pyx = wrapper_pyx.replace("EDGE_DATA_BY_NAME", edge_data_by_name)
 
         edges_data_by_name = "\n\n".join(
             [
@@ -223,16 +223,16 @@ class Graph:
                 for name, dtype in edge_attr_dtypes.items()
             ]
         )
-        graphlite_pyx = graphlite_pyx.replace("EDGES_DATA_BY_NAME", edges_data_by_name)
+        wrapper_pyx = wrapper_pyx.replace("EDGES_DATA_BY_NAME", edges_data_by_name)
 
-        graphlite = witty.compile_module(
-            graphlite_pyx,
+        wrapper = witty.compile_module(
+            wrapper_pyx,
             extra_compile_args=["-O3", "-std=c++17"],
             include_dirs=[str(src_dir)],
             language="c++",
             quiet=True,
         )
-        Graph = graphlite.DirectedGraph if directed else graphlite.UndirectedGraph
+        Graph = wrapper.DirectedGraph if directed else wrapper.UndirectedGraph
         GraphType = type(cls.__name__, (cls, Graph), {})
         return Graph.__new__(GraphType)
 

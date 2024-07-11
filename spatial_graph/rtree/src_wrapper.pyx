@@ -12,8 +12,8 @@ cdef extern from *:
     typedef NODE_TYPE item_data_t;
     typedef COORD_TYPE coord_t;
 
-    #include "impl/rtree/rtree.h"
-    #include "impl/rtree/rtree.c"
+    #include "src/rtree.h"
+    #include "src/rtree.c"
 
     """
     cdef struct rtree

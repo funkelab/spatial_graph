@@ -7,7 +7,7 @@ import numpy as np
 
 cdef extern from *:
     """
-    #include "impl/graphlite/graph_lite.h"
+    #include "src/graph_lite.h"
 
     // partial template instantiation of graph_lite::Graph as
     // UndirectedGraphTmpl
