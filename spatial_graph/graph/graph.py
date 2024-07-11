@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from ..dtypes import (
     DType,
-    dtypes_to_struct,
+    dtypes_to_cppclass,
     dtypes_to_arguments,
     dtypes_to_array_pointers,
     dtypes_to_array_pointer_names,
@@ -123,10 +123,10 @@ class Graph:
         )
         wrapper_pyx = wrapper_pyx.replace("NODE_NPTYPE", node_dtype.base)
         wrapper_pyx = wrapper_pyx.replace(
-            "NODE_DATA_DECLARATION", dtypes_to_struct("NodeData", node_attr_dtypes)
+            "NODE_DATA_DECLARATION", dtypes_to_cppclass("NodeData", node_attr_dtypes)
         )
         wrapper_pyx = wrapper_pyx.replace(
-            "EDGE_DATA_DECLARATION", dtypes_to_struct("EdgeData", edge_attr_dtypes)
+            "EDGE_DATA_DECLARATION", dtypes_to_cppclass("EdgeData", edge_attr_dtypes)
         )
         wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARGS", dtypes_to_arguments(node_attr_dtypes)

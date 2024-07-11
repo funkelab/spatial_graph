@@ -27,6 +27,24 @@ class DType:
 
         return dtype, size
 
+    def to_c_decl(self, name):
+        """Convert this dtype to the equivalent C/C++ argument."""
+        # is this an array type?
+        if self.is_array:
+            suffix = f"[{self.size}]"
+        else:
+            suffix = ""
+
+        if self.base == "float32" or self.base == "float":
+            dtype = "float"
+        elif self.base == "float64" or self.base == "double":
+            dtype = "double"
+        else:
+            # this might not work for all of them, this is just a fallback
+            dtype = np.dtype(self.base).name + "_t"
+
+        return dtype + " " + name + suffix
+
     def to_pyxtype(self, use_memory_view=False, as_arrays=False):
         """Convert this dtype to the equivalent C/C++/PYX types.
 
@@ -69,6 +87,48 @@ def dtypes_to_struct(struct_name, dtypes):
     pyx_code = f"cdef struct {struct_name}:\n"
     for name, dtype in dtypes.items():
         pyx_code += f"    {dtype.to_pyxtype()} {name}\n"
+    return pyx_code
+
+
+def dtypes_to_cppclass(class_name, dtypes):
+    arguments = ", ".join(
+        [dtype.to_c_decl("_" + name) for name, dtype in dtypes.items()]
+    )
+    assign = []
+    for name, dtype in dtypes.items():
+        if dtype.is_array:
+            initializer = (
+                "{" + ",".join([f"_{name}[{i}]" for i in range(dtype.size)]) + "}"
+            )
+            assign.append(f"{name}{initializer}")
+        else:
+            assign.append(f"{name}(_{name})")
+    assign = ", ".join(assign)
+    pyx_code = f"cdef extern from *:\n"
+    pyx_code += f'    """\n'
+    pyx_code += f"    class {class_name} {{\n"
+    pyx_code += f"        public:\n"
+    pyx_code += f"            {class_name}() {{}};\n"
+    pyx_code += f"            {class_name}({arguments}) : {assign} {{}};\n"
+    for name, dtype in dtypes.items():
+        pyx_code += f"            {dtype.to_c_decl(name)};\n"
+    pyx_code += f"    }};\n"
+    pyx_code += f'    """\n'
+    pyx_code += f"    cdef cppclass {class_name}:\n"
+    pyx_code += f"        {class_name}({arguments}) except +\n"
+    for name, dtype in dtypes.items():
+        pyx_code += f"        {dtype.to_pyxtype()} {name}\n"
+    pyx_code += f"cdef class {class_name}View:\n"
+    pyx_code += f"    cdef {class_name}* _ptr\n"
+    pyx_code += f"    cdef set_ptr(self, {class_name}* ptr):\n"
+    pyx_code += f"        self._ptr = ptr\n"
+    for name, dtype in dtypes.items():
+        pyx_code += f"    @property\n"
+        pyx_code += f"    def {name}(self):\n"
+        pyx_code += f"        return self._ptr.{name}\n"
+        pyx_code += f"    @{name}.setter\n"
+        pyx_code += f"    def {name}(self, value):\n"
+        pyx_code += f"        self._ptr.{name} = value\n"
     return pyx_code
 
 

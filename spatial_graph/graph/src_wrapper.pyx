@@ -123,10 +123,12 @@ EDGE_DATA_ARRAYS_POINTERS_SET
 
         cdef NodeIterator it = self._graph.begin()
         cdef NodeIterator end = self._graph.end()
+        cdef NodeDataView node_data = NodeDataView()
 
         if data:
             while it != end:
-                yield deref(it), self._graph.node_prop(it)
+                node_data.set_ptr(&self._graph.node_prop(it))
+                yield deref(it), node_data
                 inc(it)
         else:
             while it != end:
@@ -145,6 +147,7 @@ EDGE_DATA_ARRAYS_POINTERS_SET
         cdef NodeIterator node_end = self._graph.end()
         cdef pair[NeighborsIterator, NeighborsIterator] view
         cdef NodeType u, v
+        cdef EdgeDataView edge_data = EdgeDataView()
 
         while node_it != node_end:
             view = self._graph.neighbors(node_it)
@@ -155,7 +158,8 @@ EDGE_DATA_ARRAYS_POINTERS_SET
                 v = deref(it).first
                 if u < v:
                     if data:
-                        yield (u, v), deref(it).second.prop()
+                        edge_data.set_ptr(&deref(it).second.prop())
+                        yield (u, v), edge_data
                     else:
                         yield (u, v)
                 inc(it)
@@ -189,17 +193,21 @@ EDGE_DATA_ARRAYS_POINTERS_SET
         return data
 
     def nodes_data(self, NodeType[::1] nodes):
+        cdef NodeDataView node_data = NodeDataView()
         for node in nodes:
-            yield node, self._graph.node_prop(node)
+            node_data.set_ptr(&self._graph.node_prop(node))
+            yield node, node_data
 
 NODE_DATA_BY_NAME
 
 NODES_DATA_BY_NAME
 
     def edges_data(self, NodeType[::1] us, NodeType[::1] vs):
+        cdef EdgeDataView edge_data = EdgeDataView()
         num_edges = len(us)
         for i in range(num_edges):
-            yield self._graph.edge_prop(us[i], vs[i])
+            edge_data.set_ptr(&self._graph.edge_prop(us[i], vs[i]))
+            yield edge_data
 
 EDGE_DATA_BY_NAME
 
@@ -223,10 +231,12 @@ EDGES_DATA_BY_NAME
         cdef pair[NeighborsIterator, NeighborsIterator] view = self._graph.neighbors(node)
         cdef NeighborsIterator it = view.first
         cdef NeighborsIterator end = view.second
+        cdef EdgeDataView edge_data = EdgeDataView()
 
         if data:
             while it != end:
-                yield deref(it).first, deref(it).second.prop()
+                edge_data.set_ptr(&deref(it).second.prop())
+                yield deref(it).first, edge_data
                 inc(it)
         else:
             while it != end:
