@@ -190,7 +190,7 @@ EDGE_DATA_ARRAYS_POINTERS_SET
                     i += 1
                 inc(it)
 
-        return data
+        return data[:i]
 
     def nodes_data(self, NodeType[::1] nodes):
         cdef NodeDataView node_data = NodeDataView()
