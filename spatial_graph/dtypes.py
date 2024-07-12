@@ -82,6 +82,31 @@ class DType:
 
         return dtype + suffix
 
+    def to_rvalue(self, name, array_index=None):
+        """ "Convert this dtype into an r-value to be used in PYX files."""
+
+        if self.is_array:
+            if array_index:
+                # convert 'dtype[:, size] name' -> '{name[i, 0], ..., name[i, size-1]}'
+                return (
+                    "{"
+                    + ", ".join(
+                        [name + f"[{array_index}, {i}]" for i in range(self.size)]
+                    )
+                    + "}"
+                )
+            else:
+                # convert 'dtype[size] name' -> '{name[0], ..., name[size-1]}'
+                return (
+                    "{" + ", ".join([name + f"[{i}]" for i in range(self.size)]) + "}"
+                )
+        else:
+            if array_index:
+                # convert 'dtype[:] name' -> 'name[i]'
+                return f"{name}[{array_index}]"
+            else:
+                return name
+
 
 def dtypes_to_struct(struct_name, dtypes):
     pyx_code = f"cdef struct {struct_name}:\n"

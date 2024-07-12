@@ -11,12 +11,15 @@ from ..dtypes import (
 
 
 node_data_template = """
-    def node_data_NAME(self, NodeType node):
+    def get_node_data_NAME(self, NodeType node):
         return self._graph.node_prop(node).NAME
+
+    def set_node_data_NAME(self, NodeType node, DTYPE NAME):
+        self._graph.node_prop(node).NAME = RVALUE
 """
 
 nodes_data_template = """
-    def nodes_data_NAME(self, NodeType[::1] nodes):
+    def get_nodes_data_NAME(self, NodeType[::1] nodes):
 
         cdef NodeIterator node_it = self._graph.begin()
         cdef NodeIterator node_end = self._graph.end()
@@ -42,15 +45,35 @@ nodes_data_template = """
                 view[i] = self._graph.node_prop(nodes[i]).NAME
 
         return data
+
+    def set_nodes_data_NAME(self, NodeType[::1] nodes, PYXTYPE NAME):
+
+        cdef NodeIterator node_it = self._graph.begin()
+        cdef NodeIterator node_end = self._graph.end()
+        cdef Py_ssize_t i = 0
+
+        # all nodes requested
+        if nodes is None:
+            while node_it != node_end:
+                self._graph.node_prop(node_it).NAME = RVALUE
+                inc(node_it)
+                i += 1
+        else:
+            assert len(nodes) == len(NAME)
+            for i in range(len(nodes)):
+                self._graph.node_prop(nodes[i]).NAME = RVALUE
 """
 
 edge_data_template = """
-    def edge_data_NAME(self, NodeType u, NodeType v):
+    def get_edge_data_NAME(self, NodeType u, NodeType v):
         return self._graph.edge_prop(u, v).NAME
+
+    def set_edge_data_NAME(self, NodeType u, NodeType v, DTYPE NAME):
+        self._graph.edge_prop(u, v).NAME = RVALUE
 """
 
 edges_data_template = """
-    def edges_data_NAME(self, NodeType[::1] us, NodeType[::1] vs):
+    def get_edges_data_NAME(self, NodeType[::1] us, NodeType[::1] vs):
 
         cdef Py_ssize_t i = 0
         cdef Py_ssize_t num_edges = 0
@@ -92,6 +115,17 @@ edges_data_template = """
                 view[i] = self._graph.edge_prop(us[i], vs[i]).NAME
 
         return data
+
+    def set_edges_data_NAME(self, NodeType[::1] us, NodeType[::1] vs, PYXTYPE NAME):
+
+        cdef Py_ssize_t i = 0
+        cdef Py_ssize_t num_edges = 0
+
+        assert len(us) == len(vs)
+        num_edges = len(us)
+
+        for i in range(num_edges):
+            self._graph.edge_prop(us[i], vs[i]).NAME = RVALUE
 """
 
 
@@ -190,7 +224,9 @@ class Graph:
         node_data_by_name = "\n\n".join(
             [
                 node_data_template.replace("NAME", name)
-                for name in node_attr_dtypes.keys()
+                .replace("DTYPE", dtype.to_pyxtype(use_memory_view=True))
+                .replace("RVALUE", dtype.to_rvalue(name=name))
+                for name, dtype in node_attr_dtypes.items()
             ]
         )
         wrapper_pyx = wrapper_pyx.replace("NODE_DATA_BY_NAME", node_data_by_name)
@@ -200,6 +236,7 @@ class Graph:
                 nodes_data_template.replace("NAME", name)
                 .replace("PYXTYPE", dtype.to_pyxtype(as_arrays=True))
                 .replace("NPTYPE", dtype.base)
+                .replace("RVALUE", dtype.to_rvalue(name=name, array_index="i"))
                 .replace("SHAPE", str(dtype.shape))
                 for name, dtype in node_attr_dtypes.items()
             ]
@@ -209,7 +246,9 @@ class Graph:
         edge_data_by_name = "\n\n".join(
             [
                 edge_data_template.replace("NAME", name)
-                for name in edge_attr_dtypes.keys()
+                .replace("DTYPE", dtype.to_pyxtype(use_memory_view=True))
+                .replace("RVALUE", dtype.to_rvalue(name=name))
+                for name, dtype in edge_attr_dtypes.items()
             ]
         )
         wrapper_pyx = wrapper_pyx.replace("EDGE_DATA_BY_NAME", edge_data_by_name)
@@ -219,6 +258,7 @@ class Graph:
                 edges_data_template.replace("NAME", name)
                 .replace("PYXTYPE", dtype.to_pyxtype(as_arrays=True))
                 .replace("NPTYPE", dtype.base)
+                .replace("RVALUE", dtype.to_rvalue(name=name, array_index="i"))
                 .replace("SHAPE", str(dtype.shape))
                 for name, dtype in edge_attr_dtypes.items()
             ]
@@ -251,7 +291,12 @@ class NodeAttrsView:
     def __init__(self, graph, nodes):
         super().__setattr__("graph", graph)
         for name in graph.node_attr_dtypes.keys():
-            super().__setattr__(f"attr_{name}", getattr(graph, f"nodes_data_{name}"))
+            super().__setattr__(
+                f"get_attr_{name}", getattr(graph, f"get_nodes_data_{name}")
+            )
+            super().__setattr__(
+                f"set_attr_{name}", getattr(graph, f"set_nodes_data_{name}")
+            )
 
         if nodes is not None and not isinstance(nodes, np.ndarray):
             # nodes is not an ndarray, can it be converted into one?
@@ -264,7 +309,10 @@ class NodeAttrsView:
                 # must be a single node
                 for name in graph.node_attr_dtypes.keys():
                     super().__setattr__(
-                        f"attr_{name}", getattr(graph, f"node_data_{name}")
+                        f"set_attr_{name}", getattr(graph, f"set_node_data_{name}")
+                    )
+                    super().__setattr__(
+                        f"get_attr_{name}", getattr(graph, f"get_node_data_{name}")
                     )
 
         # at this point, nodes is either
@@ -275,13 +323,13 @@ class NodeAttrsView:
 
     def __getattr__(self, name):
         if name in self.graph.node_attr_dtypes:
-            return getattr(self, f"attr_{name}")(self.nodes)
+            return getattr(self, f"get_attr_{name}")(self.nodes)
         else:
             raise AttributeError(name)
 
     def __setattr__(self, name, values):
         if name in self.graph.node_attr_dtypes:
-            raise RuntimeError("not yet implemented")
+            return getattr(self, f"set_attr_{name}")(self.nodes, values)
         else:
             return super().__setattr__(name, values)
 
@@ -294,7 +342,12 @@ class EdgeAttrsView:
     def __init__(self, graph, edges):
         super().__setattr__("graph", graph)
         for name in graph.edge_attr_dtypes.keys():
-            super().__setattr__(f"attr_{name}", getattr(graph, f"edges_data_{name}"))
+            super().__setattr__(
+                f"get_attr_{name}", getattr(graph, f"get_edges_data_{name}")
+            )
+            super().__setattr__(
+                f"set_attr_{name}", getattr(graph, f"set_edges_data_{name}")
+            )
 
         # edges types we support:
         #
@@ -331,7 +384,12 @@ class EdgeAttrsView:
         elif isinstance(edges, tuple):
             # a single edge
             for name in graph.edge_attr_dtypes.keys():
-                super().__setattr__(f"attr_{name}", getattr(graph, f"edge_data_{name}"))
+                super().__setattr__(
+                    f"get_attr_{name}", getattr(graph, f"get_edge_data_{name}")
+                )
+                super().__setattr__(
+                    f"set_attr_{name}", getattr(graph, f"set_edge_data_{name}")
+                )
 
         # at this point, edges is either
         # 1. a nx2 numpy array
@@ -342,15 +400,17 @@ class EdgeAttrsView:
     def __getattr__(self, name):
         if name in self.graph.edge_attr_dtypes:
             if self.edges is not None:
-                return getattr(self, f"attr_{name}")(self.edges[0], self.edges[1])
+                return getattr(self, f"get_attr_{name}")(self.edges[0], self.edges[1])
             else:
-                return getattr(self, f"attr_{name}")(None, None)
+                return getattr(self, f"get_attr_{name}")(None, None)
         else:
             raise AttributeError(name)
 
     def __setattr__(self, name, values):
         if name in self.graph.edge_attr_dtypes:
-            raise RuntimeError("not yet implemented")
+            return getattr(self, f"set_attr_{name}")(
+                self.edges[0], self.edges[1], values
+            )
         else:
             return super().__setattr__(name, values)
 
