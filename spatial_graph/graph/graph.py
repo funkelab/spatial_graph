@@ -170,11 +170,11 @@ class Graph:
         )
         wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAY_ARGS",
-            dtypes_to_arguments(node_attr_dtypes, as_arrays=True),
+            dtypes_to_arguments(node_attr_dtypes, add_dim=True),
         )
         wrapper_pyx = wrapper_pyx.replace(
             "EDGE_DATA_ARRAY_ARGS",
-            dtypes_to_arguments(edge_attr_dtypes, as_arrays=True),
+            dtypes_to_arguments(edge_attr_dtypes, add_dim=True),
         )
         wrapper_pyx = wrapper_pyx.replace(
             "NODE_DATA_ARRAY_POINTERS_SET",
@@ -234,7 +234,7 @@ class Graph:
         nodes_data_by_name = "\n\n".join(
             [
                 nodes_data_template.replace("NAME", name)
-                .replace("PYXTYPE", dtype.to_pyxtype(as_arrays=True))
+                .replace("PYXTYPE", dtype.to_pyxtype(add_dim=True))
                 .replace("NPTYPE", dtype.base)
                 .replace("RVALUE", dtype.to_rvalue(name=name, array_index="i"))
                 .replace("SHAPE", str(dtype.shape))
@@ -256,7 +256,7 @@ class Graph:
         edges_data_by_name = "\n\n".join(
             [
                 edges_data_template.replace("NAME", name)
-                .replace("PYXTYPE", dtype.to_pyxtype(as_arrays=True))
+                .replace("PYXTYPE", dtype.to_pyxtype(add_dim=True))
                 .replace("NPTYPE", dtype.base)
                 .replace("RVALUE", dtype.to_rvalue(name=name, array_index="i"))
                 .replace("SHAPE", str(dtype.shape))
