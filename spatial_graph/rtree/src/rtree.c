@@ -60,7 +60,6 @@ enum kind {
     LEAF = 1,
     BRANCH = 2,
 	ITEM = 3,
-	NONE = 4,
 };
 
 struct rect {
@@ -171,6 +170,7 @@ struct element peek(struct priority_queue* queue) {
 struct rtree {
     struct rect rect;
     struct node *root;
+	struct priority_queue *queue;
     size_t count;
     size_t height;
 #ifdef USE_PATHHINT
@@ -674,6 +674,9 @@ void rtree_free(struct rtree *tr) {
     if (tr->root) {
         node_free(tr, tr->root);
     }
+	if (tr->queue) {
+		priority_queue_free(tr->queue);
+	}
     tr->free(tr);
 }
 
@@ -740,23 +743,26 @@ coord_t distance(const coord_t point[], struct rect *rect) {
 	return dist2;
 }
 
-bool rtree_nearest(const struct rtree *tr, const coord_t point[],
+bool rtree_nearest(struct rtree *tr, const coord_t point[],
     bool (*iter)(const item_data_t data, coord_t distance, void *udata),
 	void *udata) {
 
 	if (!tr->root)
 		return true;
 
-	struct priority_queue *queue = priority_queue_new();
+	if (!tr->queue)
+		tr->queue = priority_queue_new();
+	else
+		tr->queue->size = 0;
+
 	struct element root = { .distance = 0.0, .kind = tr->root->kind, .node = tr->root };
-	if (!enqueue(queue, root)) {
-		priority_queue_free(queue);
+	if (!enqueue(tr->queue, root)) {
 		return false;
 	}
 
-	while (queue->size > 0) {
+	while (tr->queue->size > 0) {
 
-		struct element next_element = dequeue(queue);
+		struct element next_element = dequeue(tr->queue);
 
 		if (next_element.kind == ITEM) {
 			// We found an ITEM in the queue, whose bounding box is next closest
@@ -775,7 +781,6 @@ bool rtree_nearest(const struct rtree *tr, const coord_t point[],
 			// false:
 			bool keep_going = iter(next_element.item.data, next_element.distance, udata);
 			if (!keep_going) {
-				priority_queue_free(queue);
 				return true;
 			}
 
@@ -792,8 +797,7 @@ bool rtree_nearest(const struct rtree *tr, const coord_t point[],
 					.kind = ITEM,
 					.item = leaf->datas[i]
 				};
-				if (!enqueue(queue, item_element)) {
-					priority_queue_free(queue);
+				if (!enqueue(tr->queue, item_element)) {
 					return false;
 				}
 			}
@@ -811,14 +815,12 @@ bool rtree_nearest(const struct rtree *tr, const coord_t point[],
 					.kind = branch->nodes[i]->kind,  // BRANCH or LEAF
 					.node = branch->nodes[i]
 				};
-				if (!enqueue(queue, node_element)) {
-					priority_queue_free(queue);
+				if (!enqueue(tr->queue, node_element)) {
 					return false;
 				}
 			}
 		}
 	}
-	priority_queue_free(queue);
 	return true;
 }
 

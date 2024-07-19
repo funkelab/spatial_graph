@@ -35,7 +35,7 @@ cdef extern from *:
             void *udata),
         void *udata)
     cdef bool rtree_nearest(
-        const rtree *tr,
+        rtree *tr,
         const coord_t *point,
         bool (*iter)(
             const item_data_t data,

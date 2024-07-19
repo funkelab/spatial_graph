@@ -70,7 +70,7 @@ void rtree_search(const struct rtree *tr, const coord_t *min, const coord_t *max
 // Find the nearest neighbors to the given query point.
 //
 // Returning false from the iter will stop the search.
-bool rtree_nearest(const struct rtree *tr, const coord_t *point,
+bool rtree_nearest(struct rtree *tr, const coord_t *point,
     bool (*iter)(const item_data_t data, coord_t distance, void *udata),
 	void *udata);
 
