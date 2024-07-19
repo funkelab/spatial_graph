@@ -18,6 +18,7 @@ cdef extern from *:
     """
     cdef struct rtree
     cdef rtree *rtree_new()
+    cdef void rtree_free(rtree *tr)
     cdef bool rtree_insert(
         rtree *tr,
         const coord_t *min,
@@ -108,6 +109,9 @@ cdef class RTree:
 
     def __cinit__(self):
         self._rtree = rtree_new()
+
+    def __dealloc__(self):
+        rtree_free(self._rtree)
 
     def insert_point(self, id, coord_t[::1] point):
 
