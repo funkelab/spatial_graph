@@ -33,6 +33,14 @@ cdef extern from *:
             const item_data_t data,
             void *udata),
         void *udata)
+    cdef bool rtree_nearest(
+        const rtree *tr,
+        const coord_t *point,
+        bool (*iter)(
+            const item_data_t data,
+            coord_t distance,
+            void *udata),
+        void *udata)
     cdef bool rtree_delete(
         rtree *tr,
         const coord_t *min,
@@ -64,15 +72,33 @@ cdef bint search_iterator(
     results.size += 1
     return True
 
-
 cdef struct search_results:
     size_t size
     item_data_t* data
 
+cdef bint nearest_iterator(
+        const item_data_t item,
+        coord_t distance,
+        void* udata
+    ) noexcept:
+
+    cdef nearest_results* results = <nearest_results*>udata
+    results.data[results.size] = item
+    results.size += 1
+    return results.size < results.max_size
+
+cdef struct nearest_results:
+    size_t size
+    size_t max_size
+    item_data_t* data
 
 # wrap a contiguous numpy buffer, this way we can pass it to a plain C function
 cdef init_search_results_from_numpy(search_results* r, item_data_t[::1] data):
     r.size = 0
+    r.data = &data[0]
+cdef init_nearest_results_from_numpy(nearest_results* r, item_data_t[::1] data):
+    r.size = 0
+    r.max_size = len(data)
     r.data = &data[0]
 
 
@@ -131,6 +157,26 @@ cdef class RTree:
 
         return data_array
 
+    def nearest(self, coord_t[::1] point, size_t k):
+
+        cdef nearest_results results
+
+        data_array = np.zeros((k,), dtype="NODE_DTYPE")
+        if k == 0:
+            return data_array
+        init_nearest_results_from_numpy(&results, data_array)
+
+        all_good = rtree_nearest(
+            self._rtree,
+            &point[0],
+            &nearest_iterator,
+            &results)
+
+        if not all_good:
+            raise RuntimeError("RTree nearest neighbor search maxed out the queue size.")
+
+        return data_array[:results.size]
+
     def delete(
             self,
             coord_t[::1] bb_min,
@@ -138,7 +184,7 @@ cdef class RTree:
             item_data_t item):
 
         cdef coord_t* bb_min_p = &bb_min[0]
-        cdef coord_t* bb_max_p = &bb_min[0] if bb_min is None else NULL
+        cdef coord_t* bb_max_p = &bb_max[0] if bb_max is not None else NULL
 
         return rtree_delete(
             self._rtree,

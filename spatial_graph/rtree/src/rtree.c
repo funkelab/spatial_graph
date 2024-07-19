@@ -54,9 +54,13 @@ static int rc_fetch_add(rc_t *ptr, int delta) {
 }
 #endif
 
+#define abs(x) ({ __typeof__ (x) _x = (x); _x >= 0 ? _x : -_x; })
+#define min(a,b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a < _b ? _a : _b; })
 enum kind {
     LEAF = 1,
     BRANCH = 2,
+	ITEM = 3,
+	NONE = 4,
 };
 
 struct rect {
@@ -78,6 +82,91 @@ struct node {
         struct item datas[MAXITEMS];
     };
 };
+
+// priority queue
+struct element {
+	coord_t distance;
+    enum kind kind;
+	union {
+		struct node* node;
+		struct item item;
+	};
+};
+
+struct priority_queue {
+	size_t size;
+	struct element elements[MAX_QUEUE_SIZE];
+};
+
+struct priority_queue* priority_queue_new() {
+	struct priority_queue *queue = (struct priority_queue*)malloc(sizeof(struct priority_queue));
+	if (!queue)
+		return NULL;
+	queue->size = 0;
+	return queue;
+}
+
+void priority_queue_free(struct priority_queue* queue) {
+	free(queue);
+}
+
+void swap(struct element* a, struct element* b) {
+	struct element tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+void heapify_up(struct priority_queue* queue, size_t index) {
+	if (index == 0) return;
+	size_t midpoint = (index - 1)/2;
+	if (queue->elements[midpoint].distance > queue->elements[index].distance) {
+		swap(&queue->elements[midpoint], &queue->elements[index]);
+		heapify_up(queue, midpoint);
+	}
+}
+
+void heapify_down(struct priority_queue* queue, size_t index) {
+	size_t smallest = index;
+	size_t left = 2*index + 1;
+	size_t right = 2*index + 2;
+
+	if (left < queue->size) {
+		if (queue->elements[left].distance < queue->elements[smallest].distance) {
+			smallest = left;
+		}
+	}
+	if (right < queue->size) {
+		if (queue->elements[right].distance < queue->elements[smallest].distance) {
+			smallest = right;
+		}
+	}
+	if (smallest != index) {
+		swap(&queue->elements[index], &queue->elements[smallest]);
+		heapify_down(queue, smallest);
+	}
+}
+
+bool enqueue(struct priority_queue* queue, struct element element) {
+	if (queue->size == MAX_QUEUE_SIZE)
+		return false;
+	queue->elements[queue->size] = element;
+	queue->size++;
+	heapify_up(queue, queue->size - 1);
+	return true;
+}
+
+struct element dequeue(struct priority_queue* queue) {
+
+	struct element top = queue->elements[0];
+	queue->elements[0] = queue->elements[--queue->size];
+	heapify_down(queue, 0);
+	return top;
+}
+
+struct element peek(struct priority_queue* queue) {
+	return queue->elements[0];
+}
+// end priority queue
 
 struct rtree {
     struct rect rect;
@@ -213,6 +302,15 @@ static bool rect_contains(const struct rect *rect, const struct rect *other) {
     for (int i = 0; i < DIMS; i++) {
         bits |= other->min[i] < rect->min[i];
         bits |= other->max[i] > rect->max[i];
+    }
+    return bits == 0;
+}
+
+static bool rect_contains_point(const struct rect *rect, const coord_t point[]) {
+    int bits = 0;
+    for (int i = 0; i < DIMS; i++) {
+        bits |= point[i] < rect->min[i];
+        bits |= point[i] > rect->max[i];
     }
     return bits == 0;
 }
@@ -622,6 +720,108 @@ void rtree_search(const struct rtree *tr, const coord_t min[],
     }
 }
 
+coord_t distance(const coord_t point[], struct rect *rect) {
+
+	coord_t dist2 = 0;
+
+	if (rect_contains_point(rect, point))
+		return dist2;
+
+	for (int i = 0; i < DIMS; i++) {
+		dist2 += pow(
+			min(
+				abs(point[i] - rect->min[i]),
+				abs(point[i] - rect->max[i])
+			),
+			2
+		);
+	}
+
+	return dist2;
+}
+
+bool rtree_nearest(const struct rtree *tr, const coord_t point[],
+    bool (*iter)(const item_data_t data, coord_t distance, void *udata),
+	void *udata) {
+
+	if (!tr->root)
+		return true;
+
+	struct priority_queue *queue = priority_queue_new();
+	struct element root = { .distance = 0.0, .kind = tr->root->kind, .node = tr->root };
+	if (!enqueue(queue, root)) {
+		priority_queue_free(queue);
+		return false;
+	}
+
+	while (queue->size > 0) {
+
+		struct element next_element = dequeue(queue);
+
+		if (next_element.kind == ITEM) {
+			// We found an ITEM in the queue, whose bounding box is next closest
+			// to the query point.
+
+			// Here, we could calculate a more accurate distance than the one
+			// used in the queue (e.g., distance to a line is poorly
+			// approximated by distance to bounding box of line). If that
+			// distance is larger than the next element on the queue, enqueue
+			// the item again and continue the while-loop. This would also
+			// require a new 'kind' so that we know that the distance is
+			// accurate. Right now, there is no reason to do so, since all items
+			// in the r-tree are only bounding boxes.
+
+			// Report the item and stop searching if the user function returns
+			// false:
+			bool keep_going = iter(next_element.item.data, next_element.distance, udata);
+			if (!keep_going) {
+				priority_queue_free(queue);
+				return true;
+			}
+
+		} else if (next_element.kind == LEAF) {
+			// We found a LEAF node in the queue, whose bounding box is next
+			// closest to the query point. Add each item contained in that leaf
+			// to the queue.
+
+			struct node *leaf = next_element.node;
+			for (int i = 0; i < leaf->count; i++) {
+
+				struct element item_element = {
+					.distance = distance(point, &leaf->rects[i]),
+					.kind = ITEM,
+					.item = leaf->datas[i]
+				};
+				if (!enqueue(queue, item_element)) {
+					priority_queue_free(queue);
+					return false;
+				}
+			}
+
+		} else {  // next_element.kind == BRANCH
+			// We found a BRANCH node in the queue, whose bounding box is next
+			// closest to the query point. Add each child node (BRANCH or LEAF)
+			// to the queue.
+
+			struct node *branch = next_element.node;
+			for (int i = 0; i < branch->count; i++) {
+
+				struct element node_element = {
+					.distance = distance(point, &branch->rects[i]),
+					.kind = branch->nodes[i]->kind,  // BRANCH or LEAF
+					.node = branch->nodes[i]
+				};
+				if (!enqueue(queue, node_element)) {
+					priority_queue_free(queue);
+					return false;
+				}
+			}
+		}
+	}
+	priority_queue_free(queue);
+	return true;
+}
+
 static bool node_scan(struct node *node,
     bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data,
         void *udata),
@@ -671,6 +871,9 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
             // the original code used rect_equals_bin here, but according to the
             // documentation of rtree_delete, this should check whether the item
             // is contained in the search area
+			// TODO: ir (item rect) is supposed to be the rect of the item to
+			// delete (despite the docstring in rtree.h), code below depends on
+			// it -- need better fix or original behavior
             if (!rect_contains(ir, &node->rects[i])) {
                 // not contained under this node, keep going
                 continue;

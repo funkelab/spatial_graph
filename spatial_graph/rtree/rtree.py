@@ -28,6 +28,11 @@ class RTree:
 
         wrapper = witty.compile_module(
             wrapper_pyx,
+            source_files=[
+                src_dir / "src" / "rtree.h",
+                src_dir / "src" / "rtree.c",
+                src_dir / "src" / "config.h",
+            ],
             extra_compile_args=["-O3"],
             include_dirs=[str(src_dir)],
             language="c",
