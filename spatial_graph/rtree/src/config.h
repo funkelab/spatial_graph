@@ -6,8 +6,9 @@
 // the maximal number of items per node in the rtree
 #define MAXITEMS 64
 
-// the maximal number of items in the priority queue to find nearest neighbors
-#define MAX_QUEUE_SIZE 1000000
+// the initial number of items in the priority queue to find nearest neighbors
+// (will keep doubling as needed to accommodate more)
+#define INITIAL_QUEUE_SIZE 256
 
 // workaround to avoid cython warnings, replaces stdbool
 typedef int bool;

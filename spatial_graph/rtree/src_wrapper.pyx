@@ -177,7 +177,7 @@ cdef class RTree:
             &results)
 
         if not all_good:
-            raise RuntimeError("RTree nearest neighbor search maxed out the queue size.")
+            raise RuntimeError("RTree nearest neighbor search ran out of memory.")
 
         return data_array[:results.size]
 

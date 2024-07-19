@@ -94,7 +94,8 @@ struct element {
 
 struct priority_queue {
 	size_t size;
-	struct element elements[MAX_QUEUE_SIZE];
+	size_t capacity;
+	struct element *elements;
 };
 
 struct priority_queue* priority_queue_new() {
@@ -102,10 +103,18 @@ struct priority_queue* priority_queue_new() {
 	if (!queue)
 		return NULL;
 	queue->size = 0;
+	queue->capacity = INITIAL_QUEUE_SIZE;
+	queue->elements = (struct element*)malloc(sizeof(struct element) * queue->capacity);
+	if (!queue->elements) {
+		free(queue);
+		return NULL;
+	}
 	return queue;
 }
 
 void priority_queue_free(struct priority_queue* queue) {
+	if (queue->elements)
+		free(queue->elements);
 	free(queue);
 }
 
@@ -146,8 +155,12 @@ void heapify_down(struct priority_queue* queue, size_t index) {
 }
 
 bool enqueue(struct priority_queue* queue, struct element element) {
-	if (queue->size == MAX_QUEUE_SIZE)
-		return false;
+	if (queue->size == queue->capacity) {
+		queue->capacity *= 2;
+		queue->elements = realloc(queue->elements, sizeof(struct element) * queue->capacity);
+		if (!queue->elements)
+			return false;
+	}
 	queue->elements[queue->size] = element;
 	queue->size++;
 	heapify_up(queue, queue->size - 1);
@@ -159,6 +172,16 @@ struct element dequeue(struct priority_queue* queue) {
 	struct element top = queue->elements[0];
 	queue->elements[0] = queue->elements[--queue->size];
 	heapify_down(queue, 0);
+	// reclaim some memory when the queue is shrinking
+	if (queue->size < queue->capacity/4) {
+		queue->capacity /= 2;
+		struct element *elements = realloc(queue->elements, sizeof(struct element) * queue->capacity);
+		if (!elements) {
+			queue->capacity *= 2;
+		} else {
+			queue->elements = elements;
+		}
+	}
 	return top;
 }
 
