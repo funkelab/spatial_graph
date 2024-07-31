@@ -113,22 +113,39 @@ cdef class RTree:
     def __dealloc__(self):
         rtree_free(self._rtree)
 
-    def insert_point(self, id, coord_t[::1] point):
+    def insert_point_item(self, item, coord_t[::1] point):
 
         rtree_insert(
             self._rtree,
             &point[0],
             NULL,
-            <item_t>id)
+            <item_t>item)
 
-    def insert_points(self, unsigned long[::1] ids, coord_t[:, ::1] points):
+    def insert_point_items(self, unsigned long[::1] items, coord_t[:, ::1] points):
 
-        for i in range(points.shape[0]):
+        for i in range(len(items)):
             rtree_insert(
                 self._rtree,
                 &points[i, 0],
                 NULL,
-                <item_t>ids[i])
+                <item_t>items[i])
+
+    def insert_bb_item(self, item, coord_t[::1] bb_min, coord_t[::1] bb_max):
+
+        rtree_insert(
+            self._rtree,
+            &bb_min[0],
+            &bb_max[0],
+            <item_t>item)
+
+    def insert_bb_items(self, unsigned long[::1] items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
+
+        for i in range(len(items)):
+            rtree_insert(
+                self._rtree,
+                &bb_mins[i, 0],
+                &bb_maxs[i, 0],
+                <item_t>items[i])
 
     def count(self, coord_t[::1] bb_min, coord_t[::1] bb_max):
 

@@ -27,12 +27,12 @@ class SpatialGraph(Graph):
 
     def add_node(self, node, **kwargs):
         position = self._get_position(kwargs)
-        self._rtree.insert_point(node, position)
+        self._rtree.insert_point_item(node, position)
         super().add_node(node, **kwargs)
 
     def add_nodes(self, nodes, **kwargs):
         positions = self._get_position(kwargs)
-        self._rtree.insert_points(nodes, positions)
+        self._rtree.insert_point_items(nodes, positions)
         super().add_nodes(nodes, **kwargs)
 
     def query_in_roi(self, roi, edge_inclusion=None):

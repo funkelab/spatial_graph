@@ -5,7 +5,7 @@ import numpy as np
 def test_search():
     rtree = RTree("uint64", "double", 2)
     for i in range(100):
-        rtree.insert_point(i, np.array([i, i], dtype="float64"))
+        rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
     assert rtree.count(np.array([0.5, 0.5]), np.array([50.0, 50.0])) == 50
     points = rtree.search(np.array([0.5, 0.5]), np.array([50.0, 50.0]))
@@ -21,7 +21,7 @@ def test_search():
 def test_delete():
     rtree = RTree("uint64", "double", 2)
     for i in range(100):
-        rtree.insert_point(i, np.array([i, i], dtype="float64"))
+        rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
     # for i in range(10):
     # assert rtree.delete(np.array([-100.0, -100.0]), np.array([100.0, 100.0]), i)
@@ -39,7 +39,7 @@ def test_delete():
 def test_nearest():
     rtree = RTree("uint64", "double", 2)
     for i in range(100):
-        rtree.insert_point(i, np.array([i, i], dtype="float64"))
+        rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
     points = rtree.nearest(np.array([0.0, 0.0]), k=3)
     assert list(points) == [0, 1, 2]
@@ -58,7 +58,7 @@ def test_nearest():
     assert len(points) == 0
 
     # ask a very big tree
-    rtree.insert_points(
+    rtree.insert_point_items(
         np.arange(10_000_000, dtype="uint64"),
         np.random.random((10_000_000, 2)).astype("double"),
     )
