@@ -2,20 +2,32 @@ from libc.stdint cimport *
 import numpy as np
 
 
-ctypedef ITEM_TYPE item_t
+ctypedef C_ITEM_TYPE item_t
+ctypedef PYX_ITEM_TYPE pyx_item_t
 ctypedef COORD_TYPE coord_t
 ctypedef int bool
 
 cdef extern from *:
     """
     #define DIMS NUM_DIMS
-    typedef ITEM_TYPE item_t;
+    typedef C_ITEM_TYPE item_t;
+    typedef PYX_ITEM_TYPE pyx_item_t;
     typedef COORD_TYPE coord_t;
 
     #include "src/rtree.h"
     #include "src/rtree.c"
 
+    // default PYX<->C converters, just casting
+    inline item_t pyx_to_c_item(pyx_item_t pyx_item, coord_t bb_min[NUM_DIMS], coord_t bb_max[NUM_DIMS]) {
+        return (item_t)pyx_item;
+    }
+    inline pyx_item_t c_to_pyx_item(item_t c_item) {
+        return (pyx_item_t)c_item;
+    }
+
     """
+    cdef inline item_t pyx_to_c_item(pyx_item_t c_item, coord_t *min, coord_t* max)
+    cdef inline pyx_item_t c_to_pyx_item(item_t c_item)
     cdef struct rtree
     cdef rtree *rtree_new()
     cdef void rtree_free(rtree *tr)
@@ -69,13 +81,13 @@ cdef bint search_iterator(
     ) noexcept:
 
     cdef search_results* results = <search_results*>udata
-    results.items[results.size] = item
+    results.items[results.size] = c_to_pyx_item(item)
     results.size += 1
     return True
 
 cdef struct search_results:
     size_t size
-    item_t* items
+    pyx_item_t* items
 
 cdef bint nearest_iterator(
         const item_t item,
@@ -84,20 +96,20 @@ cdef bint nearest_iterator(
     ) noexcept:
 
     cdef nearest_results* results = <nearest_results*>udata
-    results.items[results.size] = item
+    results.items[results.size] = c_to_pyx_item(item)
     results.size += 1
     return results.size < results.max_size
 
 cdef struct nearest_results:
     size_t size
     size_t max_size
-    item_t* items
+    pyx_item_t* items
 
 # wrap a contiguous numpy buffer, this way we can pass it to a plain C function
-cdef init_search_results_from_numpy(search_results* r, item_t[::1] items):
+cdef init_search_results_from_numpy(search_results* r, pyx_item_t[::1] items):
     r.size = 0
     r.items = &items[0]
-cdef init_nearest_results_from_numpy(nearest_results* r, item_t[::1] items):
+cdef init_nearest_results_from_numpy(nearest_results* r, pyx_item_t[::1] items):
     r.size = 0
     r.max_size = len(items)
     r.items = &items[0]
@@ -113,39 +125,39 @@ cdef class RTree:
     def __dealloc__(self):
         rtree_free(self._rtree)
 
-    def insert_point_item(self, item, coord_t[::1] point):
+    def insert_point_item(self, pyx_item_t item, coord_t[::1] point):
 
         rtree_insert(
             self._rtree,
             &point[0],
             NULL,
-            <item_t>item)
+            pyx_to_c_item(item, &point[0], NULL))
 
-    def insert_point_items(self, item_t[::1] items, coord_t[:, ::1] points):
+    def insert_point_items(self, pyx_item_t[::1] items, coord_t[:, ::1] points):
 
         for i in range(len(items)):
             rtree_insert(
                 self._rtree,
                 &points[i, 0],
                 NULL,
-                <item_t>items[i])
+                pyx_to_c_item(items[i], &points[i, 0], NULL))
 
-    def insert_bb_item(self, item, coord_t[::1] bb_min, coord_t[::1] bb_max):
+    def insert_bb_item(self, pyx_item_t item, coord_t[::1] bb_min, coord_t[::1] bb_max):
 
         rtree_insert(
             self._rtree,
             &bb_min[0],
             &bb_max[0],
-            <item_t>item)
+            pyx_to_c_item(item, &bb_min[0], &bb_max[0]))
 
-    def insert_bb_items(self, item_t[::1] items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
+    def insert_bb_items(self, pyx_item_t[::1] items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
 
         for i in range(len(items)):
             rtree_insert(
                 self._rtree,
                 &bb_mins[i, 0],
                 &bb_maxs[i, 0],
-                <item_t>items[i])
+                pyx_to_c_item(items[i], &bb_mins[i, 0], &bb_maxs[i, 0]))
 
     def count(self, coord_t[::1] bb_min, coord_t[::1] bb_max):
 
@@ -164,7 +176,7 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        items = np.zeros((num_results,), dtype="ITEM_DTYPE")
+        items = np.zeros((num_results,), dtype="BASE_ITEM_TYPE")
         if num_results == 0:
             return items
         init_search_results_from_numpy(&results, items)
@@ -182,7 +194,7 @@ cdef class RTree:
 
         cdef nearest_results results
 
-        items = np.zeros((k,), dtype="ITEM_DTYPE")
+        items = np.zeros((k,), dtype="BASE_ITEM_TYPE")
         if k == 0:
             return items
         init_nearest_results_from_numpy(&results, items)
@@ -202,7 +214,7 @@ cdef class RTree:
             self,
             coord_t[::1] bb_min,
             coord_t[::1] bb_max,
-            item_t item):
+            pyx_item_t item):
 
         cdef coord_t* bb_min_p = &bb_min[0]
         cdef coord_t* bb_max_p = &bb_max[0] if bb_max is not None else NULL
