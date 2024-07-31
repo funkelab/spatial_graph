@@ -2,14 +2,14 @@ from libc.stdint cimport *
 import numpy as np
 
 
-ctypedef NODE_TYPE item_t
+ctypedef ITEM_TYPE item_t
 ctypedef COORD_TYPE coord_t
 ctypedef int bool
 
 cdef extern from *:
     """
     #define DIMS NUM_DIMS
-    typedef NODE_TYPE item_t;
+    typedef ITEM_TYPE item_t;
     typedef COORD_TYPE coord_t;
 
     #include "src/rtree.h"
@@ -164,7 +164,7 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        items = np.zeros((num_results,), dtype="NODE_DTYPE")
+        items = np.zeros((num_results,), dtype="ITEM_DTYPE")
         if num_results == 0:
             return items
         init_search_results_from_numpy(&results, items)
@@ -182,7 +182,7 @@ cdef class RTree:
 
         cdef nearest_results results
 
-        items = np.zeros((k,), dtype="NODE_DTYPE")
+        items = np.zeros((k,), dtype="ITEM_DTYPE")
         if k == 0:
             return items
         init_nearest_results_from_numpy(&results, items)

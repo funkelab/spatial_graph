@@ -21,8 +21,8 @@ class RTree:
 
         src_dir = Path(__file__).parent
         wrapper_pyx = open(src_dir / "src_wrapper.pyx").read()
-        wrapper_pyx = wrapper_pyx.replace("NODE_TYPE", node_dtype.to_pyxtype())
-        wrapper_pyx = wrapper_pyx.replace("NODE_DTYPE", node_dtype.base)
+        wrapper_pyx = wrapper_pyx.replace("ITEM_TYPE", node_dtype.to_pyxtype())
+        wrapper_pyx = wrapper_pyx.replace("ITEM_DTYPE", node_dtype.base)
         wrapper_pyx = wrapper_pyx.replace("COORD_TYPE", coord_dtype.to_pyxtype())
         wrapper_pyx = wrapper_pyx.replace("NUM_DIMS", str(dims))
 
