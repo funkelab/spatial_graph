@@ -67,10 +67,6 @@ struct rect {
 	coord_t max[DIMS];
 };
 
-struct item {
-	item_data_t data;
-};
-
 struct node {
 	rc_t rc;			// reference counter for copy-on-write
 	enum kind kind;	 // LEAF or BRANCH
@@ -78,7 +74,7 @@ struct node {
 	struct rect rects[MAXITEMS];
 	union {
 		struct node *nodes[MAXITEMS];
-		struct item datas[MAXITEMS];
+		item_t items[MAXITEMS];
 	};
 };
 
@@ -88,7 +84,7 @@ struct element {
 	enum kind kind;
 	union {
 		struct node* node;
-		struct item item;
+		item_t item;
 	};
 };
 
@@ -203,8 +199,8 @@ struct rtree {
 	void *(*malloc)(size_t);
 	void (*free)(void *);
 	void *udata;
-	bool (*item_clone)(const item_data_t item, item_data_t *into, void *udata);
-	void (*item_free)(const item_data_t item, void *udata);
+	bool (*item_clone)(const item_t item, item_t *into, void *udata);
+	void (*item_free)(const item_t item, void *udata);
 };
 
 static inline coord_t min0(coord_t x, coord_t y) {
@@ -246,8 +242,8 @@ static struct node *node_copy(struct rtree *tr, struct node *node) {
 			int n = 0;
 			bool oom = false;
 			for (int i = 0; i < node2->count; i++) {
-				if (!tr->item_clone(node->datas[i].data,
-					(item_data_t*)&node2->datas[i].data, tr->udata))
+				if (!tr->item_clone(node->items[i],
+					(item_t*)&node2->items[i], tr->udata))
 				{
 					oom = true;
 					break;
@@ -257,7 +253,7 @@ static struct node *node_copy(struct rtree *tr, struct node *node) {
 			if (oom) {
 				if (tr->item_free) {
 					for (int i = 0; i < n; i++) {
-						tr->item_free(node2->datas[i].data, tr->udata);
+						tr->item_free(node2->items[i], tr->udata);
 					}
 				}
 				tr->free(node2);
@@ -277,7 +273,7 @@ static void node_free(struct rtree *tr, struct node *node) {
 	} else {
 		if (tr->item_free) {
 			for (int i = 0; i < node->count; i++) {
-				tr->item_free(node->datas[i].data, tr->udata);
+				tr->item_free(node->items[i], tr->udata);
 			}
 		}
 	}
@@ -399,9 +395,9 @@ static void node_swap(struct node *node, int i, int j) {
 	node->rects[i] = node->rects[j];
 	node->rects[j] = tmp;
 	if (node->kind == LEAF) {
-		struct item tmp = node->datas[i];
-		node->datas[i] = node->datas[j];
-		node->datas[j] = tmp;
+		item_t tmp = node->items[i];
+		node->items[i] = node->items[j];
+		node->items[j] = tmp;
 	} else {
 		struct node *tmp = node->nodes[i];
 		node->nodes[i] = node->nodes[j];
@@ -455,8 +451,8 @@ static void node_move_rect_at_index_into(struct node *from, int index,
 	into->rects[into->count] = from->rects[index];
 	from->rects[index] = from->rects[from->count-1];
 	if (from->kind == LEAF) {
-		into->datas[into->count] = from->datas[index];
-		from->datas[index] = from->datas[from->count-1];
+		into->items[into->count] = from->items[index];
+		from->items[index] = from->items[from->count-1];
 	} else {
 		into->nodes[into->count] = from->nodes[index];
 		from->nodes[index] = from->nodes[from->count-1];
@@ -483,7 +479,7 @@ static bool node_split_largest_axis_edge_snap(struct rtree *tr,
 		}
 	}
 	// Make sure that both left and right nodes have at least
-	// MINITEMS by moving datas into underflowed nodes.
+	// MINITEMS by moving items into underflowed nodes.
 	if (node->count < MINITEMS) {
 		// reverse sort by min axis
 		node_sort_by_axis(right, axis, true, false);
@@ -563,7 +559,7 @@ static struct rect node_rect_calc(const struct node *node) {
 
 // node_insert returns false if out of memory
 static bool node_insert(struct rtree *tr, struct rect *nr, struct node *node,
-	struct rect *ir, struct item item, int depth, bool *split)
+	struct rect *ir, item_t item, int depth, bool *split)
 {
 	if (node->kind == LEAF) {
 		if (node->count == MAXITEMS) {
@@ -572,7 +568,7 @@ static bool node_insert(struct rtree *tr, struct rect *nr, struct node *node,
 		}
 		int index = node->count;
 		node->rects[index] = *ir;
-		node->datas[index] = item;
+		node->items[index] = item;
 		node->count++;
 		*split = false;
 		return true;
@@ -624,30 +620,20 @@ struct rtree *rtree_new(void) {
 }
 
 void rtree_set_item_callbacks(struct rtree *tr,
-	bool (*clone)(const item_data_t item, item_data_t *into, void *udata),
-	void (*free)(const item_data_t item, void *udata))
+	bool (*clone)(const item_t item, item_t *into, void *udata),
+	void (*free)(const item_t item, void *udata))
 {
 	tr->item_clone = clone;
 	tr->item_free = free;
 }
 
 bool rtree_insert(struct rtree *tr, const coord_t *min,
-	const coord_t *max, const item_data_t data)
+	const coord_t *max, const item_t item)
 {
 	// copy input rect
 	struct rect rect;
 	memcpy(&rect.min[0], min, sizeof(coord_t)*DIMS);
 	memcpy(&rect.max[0], max?max:min, sizeof(coord_t)*DIMS);
-
-	// copy input data
-	struct item item;
-	if (tr->item_clone) {
-		if (!tr->item_clone(data, (item_data_t*)&item.data, tr->udata)) {
-			return false;
-		}
-	} else {
-		memcpy(&item.data, &data, sizeof(item_data_t));
-	}
 
 	while (1) {
 		if (!tr->root) {
@@ -688,7 +674,7 @@ bool rtree_insert(struct rtree *tr, const coord_t *min,
 	}
 	// out of memory
 	if (tr->item_free) {
-		tr->item_free(item.data, tr->udata);
+		tr->item_free(item, tr->udata);
 	}
 	return false;
 }
@@ -704,7 +690,7 @@ void rtree_free(struct rtree *tr) {
 }
 
 static bool node_search(struct node *node, struct rect *rect,
-	bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data,
+	bool (*iter)(const coord_t *min, const coord_t *max, const item_t item,
 		void *udata),
 	void *udata)
 {
@@ -712,7 +698,7 @@ static bool node_search(struct node *node, struct rect *rect,
 		for (int i = 0; i < node->count; i++) {
 			if (rect_intersects(&node->rects[i], rect)) {
 				if (!iter(node->rects[i].min, node->rects[i].max,
-					node->datas[i].data, udata))
+					node->items[i], udata))
 				{
 					return false;
 				}
@@ -732,7 +718,7 @@ static bool node_search(struct node *node, struct rect *rect,
 
 void rtree_search(const struct rtree *tr, const coord_t min[],
 	const coord_t max[],
-	bool (*iter)(const coord_t min[], const coord_t max[], const item_data_t data,
+	bool (*iter)(const coord_t min[], const coord_t max[], const item_t item,
 		void *udata),
 	void *udata)
 {
@@ -767,7 +753,7 @@ coord_t distance(const coord_t point[], struct rect *rect) {
 }
 
 bool rtree_nearest(struct rtree *tr, const coord_t point[],
-	bool (*iter)(const item_data_t data, coord_t distance, void *udata),
+	bool (*iter)(const item_t item, coord_t distance, void *udata),
 	void *udata) {
 
 	if (!tr->root)
@@ -802,7 +788,7 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 
 			// Report the item and stop searching if the user function returns
 			// false:
-			bool keep_going = iter(next_element.item.data, next_element.distance, udata);
+			bool keep_going = iter(next_element.item, next_element.distance, udata);
 			if (!keep_going) {
 				return true;
 			}
@@ -818,7 +804,7 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 				struct element item_element = {
 					.distance = distance(point, &leaf->rects[i]),
 					.kind = ITEM,
-					.item = leaf->datas[i]
+					.item = leaf->items[i]
 				};
 				if (!enqueue(tr->queue, item_element)) {
 					return false;
@@ -848,14 +834,14 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 }
 
 static bool node_scan(struct node *node,
-	bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data,
+	bool (*iter)(const coord_t *min, const coord_t *max, const item_t item,
 		void *udata),
 	void *udata)
 {
 	if (node->kind == LEAF) {
 		for (int i = 0; i < node->count; i++) {
 			if (!iter(node->rects[i].min, node->rects[i].max,
-				node->datas[i].data, udata))
+				node->items[i], udata))
 			{
 				return false;
 			}
@@ -871,7 +857,7 @@ static bool node_scan(struct node *node,
 }
 
 void rtree_scan(const struct rtree *tr,
-	bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data,
+	bool (*iter)(const coord_t *min, const coord_t *max, const item_t item,
 		void *udata),
 	void *udata)
 {
@@ -885,8 +871,8 @@ size_t rtree_count(const struct rtree *tr) {
 }
 
 static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
-	struct rect *ir, struct item item, int depth, bool *removed, bool *shrunk,
-	int (*compare)(const item_data_t a, const item_data_t b, void *udata),
+	struct rect *ir, item_t item, int depth, bool *removed, bool *shrunk,
+	int (*compare)(const item_t a, const item_t b, void *udata),
 	void *udata)
 {
 	*removed = false;
@@ -904,17 +890,17 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 				continue;
 			}
 			int cmp = compare ?
-				compare(node->datas[i].data, item.data, udata) :
-				memcmp(&node->datas[i].data, &item.data, sizeof(item_data_t));
+				compare(node->items[i], item, udata) :
+				memcmp(&node->items[i], &item, sizeof(item_t));
 			if (cmp != 0) {
 				continue;
 			}
 			// Found the target item to delete.
 			if (tr->item_free) {
-				tr->item_free(node->datas[i].data, tr->udata);
+				tr->item_free(node->items[i], tr->udata);
 			}
 			node->rects[i] = node->rects[node->count-1];
-			node->datas[i] = node->datas[node->count-1];
+			node->items[i] = node->items[node->count-1];
 			node->count--;
 			if (rect_onedge(ir, nr)) {
 				// The item rect was on the edge of the node rect.
@@ -987,18 +973,14 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 
 // returns false if out of memory
 static bool rtree_delete0(struct rtree *tr, const coord_t *min,
-	const coord_t *max, const item_data_t data,
-	int (*compare)(const item_data_t a, const item_data_t b, void *udata),
+	const coord_t *max, const item_t item,
+	int (*compare)(const item_t a, const item_t b, void *udata),
 	void *udata)
 {
 	// copy input rect
 	struct rect rect;
 	memcpy(&rect.min[0], min, sizeof(coord_t)*DIMS);
 	memcpy(&rect.max[0], max?max:min, sizeof(coord_t)*DIMS);
-
-	// copy input data
-	struct item item;
-	memcpy(&item.data, &data, sizeof(item_data_t));
 
 	if (!tr->root) {
 		return true;
@@ -1036,17 +1018,17 @@ static bool rtree_delete0(struct rtree *tr, const coord_t *min,
 }
 
 bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max,
-	const item_data_t data)
+	const item_t item)
 {
-	return rtree_delete0(tr, min, max, data, NULL, NULL);
+	return rtree_delete0(tr, min, max, item, NULL, NULL);
 }
 
 bool rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
-	const coord_t *max, const item_data_t data,
-	int (*compare)(const item_data_t a, const item_data_t b, void *udata),
+	const coord_t *max, const item_t item,
+	int (*compare)(const item_t a, const item_t b, void *udata),
 	void *udata)
 {
-	return rtree_delete0(tr, min, max, data, compare, udata);
+	return rtree_delete0(tr, min, max, item, compare, udata);
 }
 
 struct rtree *rtree_clone(struct rtree *tr) {

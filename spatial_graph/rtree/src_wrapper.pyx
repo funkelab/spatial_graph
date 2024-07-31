@@ -2,14 +2,14 @@ from libc.stdint cimport *
 import numpy as np
 
 
-ctypedef NODE_TYPE item_data_t
+ctypedef NODE_TYPE item_t
 ctypedef COORD_TYPE coord_t
 ctypedef int bool
 
 cdef extern from *:
     """
     #define DIMS NUM_DIMS
-    typedef NODE_TYPE item_data_t;
+    typedef NODE_TYPE item_t;
     typedef COORD_TYPE coord_t;
 
     #include "src/rtree.h"
@@ -23,7 +23,7 @@ cdef extern from *:
         rtree *tr,
         const coord_t *min,
         const coord_t *max,
-        const item_data_t data)
+        const item_t item)
     cdef void rtree_search(
         const rtree *tr,
         const coord_t *min,
@@ -31,14 +31,14 @@ cdef extern from *:
         bool (*iter)(
             const coord_t *min,
             const coord_t *max,
-            const item_data_t data,
+            const item_t item,
             void *udata),
         void *udata)
     cdef bool rtree_nearest(
         rtree *tr,
         const coord_t *point,
         bool (*iter)(
-            const item_data_t data,
+            const item_t item,
             coord_t distance,
             void *udata),
         void *udata)
@@ -46,13 +46,13 @@ cdef extern from *:
         rtree *tr,
         const coord_t *min,
         const coord_t *max,
-        const item_data_t data)
+        const item_t item)
     cdef size_t rtree_count(const rtree *tr)
 
 cdef bint count_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
-        const item_data_t item,
+        const item_t item,
         void* udata
     ) noexcept:
 
@@ -64,43 +64,43 @@ cdef bint count_iterator(
 cdef bint search_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
-        const item_data_t item,
+        const item_t item,
         void* udata
     ) noexcept:
 
     cdef search_results* results = <search_results*>udata
-    results.data[results.size] = item
+    results.items[results.size] = item
     results.size += 1
     return True
 
 cdef struct search_results:
     size_t size
-    item_data_t* data
+    item_t* items
 
 cdef bint nearest_iterator(
-        const item_data_t item,
+        const item_t item,
         coord_t distance,
         void* udata
     ) noexcept:
 
     cdef nearest_results* results = <nearest_results*>udata
-    results.data[results.size] = item
+    results.items[results.size] = item
     results.size += 1
     return results.size < results.max_size
 
 cdef struct nearest_results:
     size_t size
     size_t max_size
-    item_data_t* data
+    item_t* items
 
 # wrap a contiguous numpy buffer, this way we can pass it to a plain C function
-cdef init_search_results_from_numpy(search_results* r, item_data_t[::1] data):
+cdef init_search_results_from_numpy(search_results* r, item_t[::1] items):
     r.size = 0
-    r.data = &data[0]
-cdef init_nearest_results_from_numpy(nearest_results* r, item_data_t[::1] data):
+    r.items = &items[0]
+cdef init_nearest_results_from_numpy(nearest_results* r, item_t[::1] items):
     r.size = 0
-    r.max_size = len(data)
-    r.data = &data[0]
+    r.max_size = len(items)
+    r.items = &items[0]
 
 
 cdef class RTree:
@@ -119,7 +119,7 @@ cdef class RTree:
             self._rtree,
             &point[0],
             NULL,
-            <item_data_t>id)
+            <item_t>id)
 
     def insert_points(self, unsigned long[::1] ids, coord_t[:, ::1] points):
 
@@ -128,7 +128,7 @@ cdef class RTree:
                 self._rtree,
                 &points[i, 0],
                 NULL,
-                <item_data_t>ids[i])
+                <item_t>ids[i])
 
     def count(self, coord_t[::1] bb_min, coord_t[::1] bb_max):
 
@@ -147,10 +147,10 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        data_array = np.zeros((num_results,), dtype="NODE_DTYPE")
+        items = np.zeros((num_results,), dtype="NODE_DTYPE")
         if num_results == 0:
-            return data_array
-        init_search_results_from_numpy(&results, data_array)
+            return items
+        init_search_results_from_numpy(&results, items)
 
         rtree_search(
             self._rtree,
@@ -159,16 +159,16 @@ cdef class RTree:
             &search_iterator,
             &results)
 
-        return data_array
+        return items
 
     def nearest(self, coord_t[::1] point, size_t k):
 
         cdef nearest_results results
 
-        data_array = np.zeros((k,), dtype="NODE_DTYPE")
+        items = np.zeros((k,), dtype="NODE_DTYPE")
         if k == 0:
-            return data_array
-        init_nearest_results_from_numpy(&results, data_array)
+            return items
+        init_nearest_results_from_numpy(&results, items)
 
         all_good = rtree_nearest(
             self._rtree,
@@ -179,13 +179,13 @@ cdef class RTree:
         if not all_good:
             raise RuntimeError("RTree nearest neighbor search ran out of memory.")
 
-        return data_array[:results.size]
+        return items[:results.size]
 
     def delete(
             self,
             coord_t[::1] bb_min,
             coord_t[::1] bb_max,
-            item_data_t item):
+            item_t item):
 
         cdef coord_t* bb_min_p = &bb_min[0]
         cdef coord_t* bb_max_p = &bb_max[0] if bb_max is not None else NULL
