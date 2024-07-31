@@ -198,9 +198,6 @@ struct rtree {
 	bool relaxed;
 	void *(*malloc)(size_t);
 	void (*free)(void *);
-	void *udata;
-	bool (*item_clone)(const item_t item, item_t *into, void *udata);
-	void (*item_free)(const item_t item, void *udata);
 };
 
 static inline coord_t min0(coord_t x, coord_t y) {
@@ -213,11 +210,6 @@ static inline coord_t max0(coord_t x, coord_t y) {
 
 static bool feq(coord_t a, coord_t b) {
 	return !(a < b || a > b);
-}
-
-
-void rtree_set_udata(struct rtree *tr, void *udata) {
-	tr->udata = udata;
 }
 
 static struct node *node_new(struct rtree *tr, enum kind kind) {
@@ -237,29 +229,6 @@ static struct node *node_copy(struct rtree *tr, struct node *node) {
 		for (int i = 0; i < node2->count; i++) {
 			rc_fetch_add(&node2->nodes[i]->rc, 1);
 		}
-	} else {
-		if (tr->item_clone) {
-			int n = 0;
-			bool oom = false;
-			for (int i = 0; i < node2->count; i++) {
-				if (!tr->item_clone(node->items[i],
-					(item_t*)&node2->items[i], tr->udata))
-				{
-					oom = true;
-					break;
-				}
-				n++;
-			}
-			if (oom) {
-				if (tr->item_free) {
-					for (int i = 0; i < n; i++) {
-						tr->item_free(node2->items[i], tr->udata);
-					}
-				}
-				tr->free(node2);
-				return NULL;
-			}
-		}
 	}
 	return node2;
 }
@@ -271,11 +240,6 @@ static void node_free(struct rtree *tr, struct node *node) {
 			node_free(tr, node->nodes[i]);
 		}
 	} else {
-		if (tr->item_free) {
-			for (int i = 0; i < node->count; i++) {
-				tr->item_free(node->items[i], tr->udata);
-			}
-		}
 	}
 	tr->free(node);
 }
@@ -619,14 +583,6 @@ struct rtree *rtree_new(void) {
 	return rtree_new_with_allocator(NULL, NULL);
 }
 
-void rtree_set_item_callbacks(struct rtree *tr,
-	bool (*clone)(const item_t item, item_t *into, void *udata),
-	void (*free)(const item_t item, void *udata))
-{
-	tr->item_clone = clone;
-	tr->item_free = free;
-}
-
 bool rtree_insert(struct rtree *tr, const coord_t *min,
 	const coord_t *max, const item_t item)
 {
@@ -673,9 +629,6 @@ bool rtree_insert(struct rtree *tr, const coord_t *min,
 		tr->height++;
 	}
 	// out of memory
-	if (tr->item_free) {
-		tr->item_free(item, tr->udata);
-	}
 	return false;
 }
 
@@ -896,9 +849,6 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 				continue;
 			}
 			// Found the target item to delete.
-			if (tr->item_free) {
-				tr->item_free(node->items[i], tr->udata);
-			}
 			node->rects[i] = node->rects[node->count-1];
 			node->items[i] = node->items[node->count-1];
 			node->count--;

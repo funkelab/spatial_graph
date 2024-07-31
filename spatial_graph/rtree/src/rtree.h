@@ -27,24 +27,6 @@ void rtree_free(struct rtree *tr);
 // This operation uses shadowing / copy-on-write.
 struct rtree *rtree_clone(struct rtree *tr);
 
-// rtree_set_item_callbacks sets the item clone and free callbacks that will be
-// called internally by the rtree when items are inserted and removed.
-//
-// These callbacks are optional but may be needed by programs that require
-// copy-on-write support by using the rtree_clone function.
-//
-// The clone function should return true if the clone succeeded or false if the
-// system is out of memory.
-void rtree_set_item_callbacks(struct rtree *tr,
-	bool (*clone)(const item_t item, item_t *into, void *udata),
-	void (*free)(const item_t item, void *udata));
-
-// rtree_set_udata sets the user-defined data.
-//
-// This should be called once after rtree_new() and is only used for
-// the item callbacks as defined in rtree_set_item_callbacks().
-void rtree_set_udata(struct rtree *tr, void *udata);
-
 // rtree_insert inserts an item into the rtree.
 //
 // This operation performs a copy of the data that is pointed to in the second
