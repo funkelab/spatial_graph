@@ -121,7 +121,7 @@ cdef class RTree:
             NULL,
             <item_t>item)
 
-    def insert_point_items(self, unsigned long[::1] items, coord_t[:, ::1] points):
+    def insert_point_items(self, item_t[::1] items, coord_t[:, ::1] points):
 
         for i in range(len(items)):
             rtree_insert(
@@ -138,7 +138,7 @@ cdef class RTree:
             &bb_max[0],
             <item_t>item)
 
-    def insert_bb_items(self, unsigned long[::1] items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
+    def insert_bb_items(self, item_t[::1] items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
 
         for i in range(len(items)):
             rtree_insert(
