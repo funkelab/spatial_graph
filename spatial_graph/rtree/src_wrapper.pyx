@@ -6,6 +6,10 @@ ctypedef int bool
 
 cdef extern from *:
     """
+    typedef int bool;
+    #define false 0
+    #define true 1
+
     #define DIMS NUM_DIMS
 
     C_DECLARATIONS
@@ -18,6 +22,11 @@ cdef extern from *:
 
     PYX_DECLARATIONS
 
+    # PYX <-> C converters
+    cdef item_t convert_pyx_to_c_item(pyx_item_t c_item, coord_t *min, coord_t* max)
+    cdef void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item)
+
+    # rtree API
     cdef struct rtree
     cdef rtree *rtree_new()
     cdef void rtree_free(rtree *tr)
@@ -96,10 +105,10 @@ cdef struct nearest_results:
     pyx_item_t* items
 
 # wrap a contiguous numpy buffer, this way we can pass it to a plain C function
-cdef init_search_results_from_numpy(search_results* r, pyx_item_t[::1] items):
+cdef init_search_results_from_numpy(search_results* r, PYX_ITEMS_MEMVIEW_TYPE items):
     r.size = 0
     r.items = &items[0]
-cdef init_nearest_results_from_numpy(nearest_results* r, pyx_item_t[::1] items):
+cdef init_nearest_results_from_numpy(nearest_results* r, PYX_ITEMS_MEMVIEW_TYPE items):
     r.size = 0
     r.max_size = len(items)
     r.items = &items[0]
@@ -123,7 +132,7 @@ cdef class RTree:
             NULL,
             convert_pyx_to_c_item(item, &point[0], NULL))
 
-    def insert_point_items(self, pyx_item_t[::1] items, coord_t[:, ::1] points):
+    def insert_point_items(self, PYX_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] points):
 
         for i in range(len(items)):
             rtree_insert(
@@ -140,7 +149,7 @@ cdef class RTree:
             &bb_max[0],
             convert_pyx_to_c_item(item, &bb_min[0], &bb_max[0]))
 
-    def insert_bb_items(self, pyx_item_t[::1] items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
+    def insert_bb_items(self, PYX_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
 
         for i in range(len(items)):
             rtree_insert(
@@ -166,7 +175,7 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        items = np.zeros((num_results,), dtype="BASE_ITEM_TYPE")
+        items = np.zeros((num_results,), dtype="NP_ITEM_DTYPE")
         if num_results == 0:
             return items
         init_search_results_from_numpy(&results, items)
@@ -184,7 +193,7 @@ cdef class RTree:
 
         cdef nearest_results results
 
-        items = np.zeros((k,), dtype="BASE_ITEM_TYPE")
+        items = np.zeros((k,), dtype="NP_ITEM_DTYPE")
         if k == 0:
             return items
         init_nearest_results_from_numpy(&results, items)

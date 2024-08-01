@@ -26,10 +26,6 @@ class RTree:
     # C and PYX items are the same here:
     ctypedef {node_dtype.to_pyxtype()} item_t
     ctypedef {node_dtype.to_pyxtype()} pyx_item_t
-
-    # converters
-    cdef item_t convert_pyx_to_c_item(pyx_item_t c_item, coord_t *min, coord_t* max)
-    cdef void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item)
 """
 
         c_declarations = f"""
@@ -37,8 +33,8 @@ class RTree:
 typedef {coord_dtype.to_pyxtype()} coord_t;
 
 // C and PYX items are the same here:
-typedef {node_dtype.to_pyxtype()} pyx_item_t;
 typedef {node_dtype.to_pyxtype()} item_t;
+typedef {node_dtype.to_pyxtype()} pyx_item_t;
 """
 
         c_function_implementations = """
@@ -57,7 +53,8 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
         wrapper_pyx = wrapper_pyx.replace("C_DECLARATIONS", c_declarations)
         wrapper_pyx = wrapper_pyx.replace("C_FUNCTION_IMPLEMENTATIONS", c_function_implementations)
 
-        wrapper_pyx = wrapper_pyx.replace("BASE_ITEM_TYPE", node_dtype.base)
+        wrapper_pyx = wrapper_pyx.replace("NP_ITEM_DTYPE", node_dtype.base)
+        wrapper_pyx = wrapper_pyx.replace("PYX_ITEMS_MEMVIEW_TYPE", node_dtype.to_pyxtype(add_dim=True))
         wrapper_pyx = wrapper_pyx.replace("NUM_DIMS", str(dims))
 
         wrapper = witty.compile_module(
