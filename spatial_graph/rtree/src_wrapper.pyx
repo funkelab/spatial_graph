@@ -63,7 +63,7 @@ cdef extern from *:
     cdef size_t rtree_count(const rtree *tr)
 
 
-cdef pyx_items_t memview_to_pyx_items_t(API_ITEMS_TYPE items):
+cdef pyx_items_t memview_to_pyx_items_t(API_ITEMS_MEMVIEW_TYPE items):
     # implementation depends on dimension of item
     return <pyx_items_t>&items[0 ITEMS_EXTRA_DIMS_0]
 
@@ -85,7 +85,7 @@ cdef struct search_results:
     pyx_items_t items
 
 
-cdef init_search_results_from_memview(search_results* r, API_ITEMS_TYPE items):
+cdef init_search_results_from_memview(search_results* r, API_ITEMS_MEMVIEW_TYPE items):
     r.size = 0
     r.items = memview_to_pyx_items_t(items)
 
@@ -109,7 +109,7 @@ cdef struct nearest_results:
     pyx_items_t items
 
 
-cdef init_nearest_results_from_memview(nearest_results* r, API_ITEMS_TYPE items):
+cdef init_nearest_results_from_memview(nearest_results* r, API_ITEMS_MEMVIEW_TYPE items):
     r.size = 0
     r.max_size = len(items)
     r.items = memview_to_pyx_items_t(items)
@@ -137,7 +137,7 @@ cdef class RTree:
     def __dealloc__(self):
         rtree_free(self._rtree)
 
-    def insert_point_items(self, API_ITEMS_TYPE items, coord_t[:, ::1] points):
+    def insert_point_items(self, API_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] points):
 
         cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
 
@@ -148,7 +148,7 @@ cdef class RTree:
                 NULL,
                 convert_pyx_to_c_item(&pyx_items[i], &points[i, 0], NULL))
 
-    def insert_bb_items(self, API_ITEMS_TYPE items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
+    def insert_bb_items(self, API_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
 
         cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
 
@@ -176,8 +176,7 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        items = np.zeros((num_results,), dtype="NP_ITEM_DTYPE")
-        # TODO: or (num_results, n)
+        items = np.zeros((num_results, ITEM_LENGTH), dtype="NP_ITEM_DTYPE")
         if num_results == 0:
             return items
         init_search_results_from_memview(&results, items)
@@ -195,8 +194,7 @@ cdef class RTree:
 
         cdef nearest_results results
 
-        items = np.zeros((k,), dtype="NP_ITEM_DTYPE")
-        # TODO: or (k, n)
+        items = np.zeros((k, ITEM_LENGTH), dtype="NP_ITEM_DTYPE")
         if k == 0:
             return items
         init_nearest_results_from_memview(&results, items)
@@ -216,7 +214,7 @@ cdef class RTree:
             self,
             coord_t[::1] bb_min,
             coord_t[::1] bb_max,
-            API_ITEMS_TYPE items):
+            API_ITEMS_MEMVIEW_TYPE items):
 
         cdef coord_t* bb_min_p = &bb_min[0]
         cdef coord_t* bb_max_p = &bb_max[0] if bb_max is not None else NULL

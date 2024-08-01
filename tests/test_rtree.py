@@ -1,4 +1,4 @@
-from spatial_graph import RTree
+from spatial_graph import RTree, EdgeRTree
 import numpy as np
 
 
@@ -64,3 +64,8 @@ def test_nearest():
     )
     points = rtree.nearest(np.array([0.5, 0.5]), k=100_000)
     assert len(points) == 100_000
+
+
+def test_edge_rtree():
+    rtree = RTree("uint64", "double", 2)
+    edge_rtree = EdgeRTree("uint64", "double", 2)
