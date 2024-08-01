@@ -1,4 +1,5 @@
 import witty
+import numpy as np
 from pathlib import Path
 from ..dtypes import (
     DType,
@@ -39,8 +40,8 @@ typedef {node_dtype.to_pyxtype()} pyx_item_t;
 
         c_function_implementations = """
 // default PYX<->C converters, just casting
-inline item_t convert_pyx_to_c_item(pyx_item_t pyx_item, coord_t *min, coord_t *max) {
-    return (item_t)pyx_item;
+inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
+    return (item_t)*pyx_item;
 }
 inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
     memcpy(pyx_item, &c_item, sizeof(item_t));
@@ -54,7 +55,9 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
         wrapper_pyx = wrapper_pyx.replace("C_FUNCTION_IMPLEMENTATIONS", c_function_implementations)
 
         wrapper_pyx = wrapper_pyx.replace("NP_ITEM_DTYPE", node_dtype.base)
-        wrapper_pyx = wrapper_pyx.replace("PYX_ITEMS_MEMVIEW_TYPE", node_dtype.to_pyxtype(add_dim=True))
+        wrapper_pyx = wrapper_pyx.replace("API_ITEM_TYPE", node_dtype.to_pyxtype())
+        wrapper_pyx = wrapper_pyx.replace("API_ITEMS_TYPE", node_dtype.to_pyxtype(add_dim=True))
+        wrapper_pyx = wrapper_pyx.replace("ITEMS_EXTRA_DIMS_0", "")
         wrapper_pyx = wrapper_pyx.replace("NUM_DIMS", str(dims))
 
         wrapper = witty.compile_module(
@@ -74,3 +77,13 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
 
     def __init__(self, node_dtype, coord_dtype, dims):
         super().__init__()
+        self.node_dtype = node_dtype
+
+    def insert_point_item(self, item, position):
+        items = np.array([item], dtype=self.node_dtype)
+        positions = position[np.newaxis]
+        return self.insert_point_items(items, positions)
+
+    def delete(self, bb_min, bb_max, item):
+        items = np.array([item], dtype=self.node_dtype)
+        return self.delete_items(bb_min, bb_max, items)
