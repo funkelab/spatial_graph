@@ -1,1 +1,1 @@
-from .rtree import RTree, EdgeRTree
+from .rtree import RTree

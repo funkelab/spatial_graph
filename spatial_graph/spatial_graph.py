@@ -1,5 +1,5 @@
 from .graph import Graph
-from .rtree import RTree
+from .node_rtree import NodeRTree
 from .dtypes import DType
 
 
@@ -23,20 +23,20 @@ class SpatialGraph(Graph):
         self.ndims = ndims
         self.position_attr = position_attr
         coord_dtype = DType(node_attr_dtypes[position_attr]).base
-        self._rtree = RTree(node_dtype, coord_dtype, ndims)
+        self._node_rtree = NodeRTree(node_dtype, coord_dtype, ndims)
 
     def add_node(self, node, **kwargs):
         position = self._get_position(kwargs)
-        self._rtree.insert_point_item(node, position)
+        self._node_rtree.insert_point_item(node, position)
         super().add_node(node, **kwargs)
 
     def add_nodes(self, nodes, **kwargs):
         positions = self._get_position(kwargs)
-        self._rtree.insert_point_items(nodes, positions)
+        self._node_rtree.insert_point_items(nodes, positions)
         super().add_nodes(nodes, **kwargs)
 
     def query_in_roi(self, roi, edge_inclusion=None):
-        nodes = self._rtree.search(roi[0], roi[1])
+        nodes = self._node_rtree.search(roi[0], roi[1])
 
         if not edge_inclusion:
             return nodes
