@@ -1,44 +1,70 @@
 import witty
 import numpy as np
 from pathlib import Path
-from ..dtypes import (
-    DType,
-    dtypes_to_struct,
-    dtypes_to_arguments,
-    dtypes_to_array_pointers,
-    dtypes_to_array_pointer_names,
-)
+from ..dtypes import DType
 
 
 class RTree:
     def __new__(
         cls,
-        node_dtype,
+        item_dtype,
         coord_dtype,
         dims,
     ):
-        node_dtype = DType(node_dtype)
+        item_dtype = DType(item_dtype)
+        item_is_array = item_dtype.is_array
+        item_size = item_dtype.size
         coord_dtype = DType(coord_dtype)
 
-        pyx_declarations = f"""
+        if item_is_array:
+
+            # item_t can't be an array in rtree, arrays can't be assigned to
+            # (and this is needed inside rtree). So we make item_t a struct
+            # with field `data` to hold the array.
+            pyx_declarations = f"""
+    ctypedef {coord_dtype.to_pyxtype()} coord_t
+    ctypedef {item_dtype.to_pyxtype()} pyx_item_t[{item_size}]
+    cdef struct item_t:
+        {item_dtype.base_c_type} data[{item_size}]
+"""
+            c_declarations = f"""
+typedef {coord_dtype.to_pyxtype()} coord_t;
+typedef {item_dtype.base_c_type} pyx_item_t[{item_size}];
+typedef struct item_t {{
+    {item_dtype.base_c_type} data[{item_size}];
+}} item_t;
+"""
+        else:
+            pyx_declarations = f"""
     # coordinate type to use:
     ctypedef {coord_dtype.to_pyxtype()} coord_t
 
-    # C and PYX items are the same here:
-    ctypedef {node_dtype.to_pyxtype()} item_t
-    ctypedef {node_dtype.to_pyxtype()} pyx_item_t
+    # C and PYX items are the same by default:
+    ctypedef {item_dtype.to_pyxtype()} item_t
+    ctypedef {item_dtype.to_pyxtype()} pyx_item_t
 """
-
-        c_declarations = f"""
-// coordinate type to use:
+            c_declarations = f"""
 typedef {coord_dtype.to_pyxtype()} coord_t;
-
-// C and PYX items are the same here:
-typedef {node_dtype.to_pyxtype()} item_t;
-typedef {node_dtype.to_pyxtype()} pyx_item_t;
+typedef {item_dtype.to_pyxtype()} item_t;
+typedef {item_dtype.to_pyxtype()} pyx_item_t;
 """
 
-        c_function_implementations = """
+        if item_is_array:
+
+            c_function_implementations = """
+inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
+    item_t c_item;
+    memcpy(&c_item, *pyx_item, sizeof(item_t));
+    return c_item;
+}
+inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
+    memcpy(pyx_item, &c_item, sizeof(item_t));
+}
+        """
+
+        else:
+
+            c_function_implementations = """
 // default PYX<->C converters, just casting
 inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
     return (item_t)*pyx_item;
@@ -56,12 +82,16 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
             "C_FUNCTION_IMPLEMENTATIONS", c_function_implementations
         )
 
-        wrapper_pyx = wrapper_pyx.replace("NP_ITEM_DTYPE", node_dtype.base)
+        wrapper_pyx = wrapper_pyx.replace("NP_ITEM_DTYPE", item_dtype.base)
         wrapper_pyx = wrapper_pyx.replace(
-            "API_ITEMS_MEMVIEW_TYPE", node_dtype.to_pyxtype(add_dim=True)
+            "API_ITEMS_MEMVIEW_TYPE", item_dtype.to_pyxtype(add_dim=True)
         )
-        wrapper_pyx = wrapper_pyx.replace("ITEM_LENGTH", "")
-        wrapper_pyx = wrapper_pyx.replace("ITEMS_EXTRA_DIMS_0", "")
+        if item_size:
+            wrapper_pyx = wrapper_pyx.replace("ITEM_LENGTH", str(item_size))
+            wrapper_pyx = wrapper_pyx.replace("ITEMS_EXTRA_DIMS_0", ", 0")
+        else:
+            wrapper_pyx = wrapper_pyx.replace("ITEM_LENGTH", "")
+            wrapper_pyx = wrapper_pyx.replace("ITEMS_EXTRA_DIMS_0", "")
         wrapper_pyx = wrapper_pyx.replace("NUM_DIMS", str(dims))
 
         wrapper = witty.compile_module(
@@ -79,28 +109,28 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
         RTreeType = type(cls.__name__, (cls, wrapper.RTree), {})
         return wrapper.RTree.__new__(RTreeType)
 
-    def __init__(self, node_dtype, coord_dtype, dims):
+    def __init__(self, item_dtype, coord_dtype, dims):
         super().__init__()
-        self.node_dtype = node_dtype
+        self.item_dtype = DType(item_dtype)
 
     def insert_point_item(self, item, position):
-        items = np.array([item], dtype=self.node_dtype)
+        items = np.array([item], dtype=self.item_dtype.base)
         positions = position[np.newaxis]
         return self.insert_point_items(items, positions)
 
     def delete(self, bb_min, bb_max, item):
-        items = np.array([item], dtype=self.node_dtype)
+        items = np.array([item], dtype=self.item_dtype.base)
         return self.delete_items(bb_min, bb_max, items)
 
 
 class EdgeRTree:
     def __new__(
         cls,
-        node_dtype,
+        item_dtype,
         coord_dtype,
         dims,
     ):
-        node_dtype = DType(node_dtype)
+        item_dtype = DType(item_dtype)
         coord_dtype = DType(coord_dtype)
 
         pyx_declarations = f"""
@@ -108,10 +138,10 @@ class EdgeRTree:
     ctypedef {coord_dtype.to_pyxtype()} coord_t
 
     # C and PYX items are dfferent here:
-    ctypedef {node_dtype.to_pyxtype()} pyx_item_t[2]
+    ctypedef {item_dtype.to_pyxtype()} pyx_item_t[2]
     cdef struct item_t:
-        {node_dtype.to_pyxtype()} u
-        {node_dtype.to_pyxtype()} v
+        {item_dtype.to_pyxtype()} u
+        {item_dtype.to_pyxtype()} v
         bool corner_mask[NUM_DIMS]
 """
 
@@ -120,10 +150,10 @@ class EdgeRTree:
 typedef {coord_dtype.to_pyxtype()} coord_t;
 
 // C and PYX items are different here:
-typedef {node_dtype.to_pyxtype()} pyx_item_t[2];
+typedef {item_dtype.to_pyxtype()} pyx_item_t[2];
 typedef struct item_t {{
-    {node_dtype.to_pyxtype()} u;
-    {node_dtype.to_pyxtype()} v;
+    {item_dtype.to_pyxtype()} u;
+    {item_dtype.to_pyxtype()} v;
     bool corner_mask[NUM_DIMS];
 }} item_t;
 """
@@ -152,9 +182,9 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
             "C_FUNCTION_IMPLEMENTATIONS", c_function_implementations
         )
 
-        wrapper_pyx = wrapper_pyx.replace("NP_ITEM_DTYPE", node_dtype.base)
+        wrapper_pyx = wrapper_pyx.replace("NP_ITEM_DTYPE", item_dtype.base)
         wrapper_pyx = wrapper_pyx.replace(
-            "API_ITEMS_MEMVIEW_TYPE", f"{node_dtype.to_pyxtype()}[:, ::1]"
+            "API_ITEMS_MEMVIEW_TYPE", f"{item_dtype.to_pyxtype()}[:, ::1]"
         )
         wrapper_pyx = wrapper_pyx.replace("ITEM_LENGTH", "2")
         wrapper_pyx = wrapper_pyx.replace("ITEMS_EXTRA_DIMS_0", ", 0")
@@ -175,5 +205,5 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
         RTreeType = type(cls.__name__, (cls, wrapper.RTree), {})
         return wrapper.RTree.__new__(RTreeType)
 
-    def __init__(self, node_dtype, coord_dtype, dims):
+    def __init__(self, item_dtype, coord_dtype, dims):
         super().__init__()

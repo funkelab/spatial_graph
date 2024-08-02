@@ -66,6 +66,11 @@ def test_nearest():
     assert len(points) == 100_000
 
 
+def test_array_item():
+    rtree = RTree("uint64[3]", "double", 2)
+    for i in range(100):
+        rtree.insert_point_item(np.array([i, i*2, i*3], dtype="uint64"), np.array([i, i], dtype="float64"))
+
 def test_edge_rtree():
     rtree = RTree("uint64", "double", 2)
     edge_rtree = EdgeRTree("uint64", "double", 2)
