@@ -5,6 +5,56 @@ from ..dtypes import DType
 
 
 class RTree:
+    """A generic RTree implementation, compiled on-the-fly during
+    instantiation.
+
+    Args:
+
+        item_dtype (``string``):
+
+            The C type of the items to hold. Can be a scalar (e.g. ``uint64``)
+            or an array of scalars (e.g., "uint64[3]").
+
+        coord_dtype (``string``):
+
+            The scalar C type to use for coordinates (e.g., ``float``).
+
+        dims (``int``):
+
+            The dimension of the r-tree.
+
+    Subclassing:
+
+        This generic implementation can be subclassed and modified in the
+        following ways:
+
+        The class members ``pyx_item_t_declaration`` and
+        ``c_item_t_declaration`` can be overwritten to use custom ``item_t``
+        structures. This will also require overwriting the
+        ``c_converter_functions`` to translate between the PYX interface (where
+        items are scalars or C arrays of scalars) and the C interface (the
+        custom ``item_t`` type.
+
+        The following constants and typedefs are available to use in the
+        provided code:
+
+            NUM_DIMS:
+
+                A constant set to the value of ``dims``.
+
+            item_base_t:
+
+                The scalar type of the item (e.g., ``uint64``), regardless of
+                whether this is a scalar or array item.
+    """
+
+    # overwrite in subclasses for custom item_t structures
+    pyx_item_t_declaration = None
+    c_item_t_declaration = None
+
+    # overwrite in subclasses for custom converters
+    c_converter_functions = None
+
     def __new__(
         cls,
         item_dtype,
@@ -16,40 +66,80 @@ class RTree:
         item_size = item_dtype.size
         coord_dtype = DType(coord_dtype)
 
-        if item_is_array:
-            # item_t can't be an array in rtree, arrays can't be assigned to
-            # (and this is needed inside rtree). So we make item_t a struct
-            # with field `data` to hold the array.
-            pyx_declarations = f"""
+        #######################################################
+        # coord_t, pyx_item_t declaration (PYX and C version) #
+        #######################################################
+
+        pyx_declarations = f"""
     ctypedef {coord_dtype.to_pyxtype()} coord_t
-    ctypedef {item_dtype.to_pyxtype()} pyx_item_t[{item_size}]
-    cdef struct item_t:
-        {item_dtype.base_c_type} data[{item_size}]
+    ctypedef {item_dtype.base_c_type} item_base_t
 """
-            c_declarations = f"""
+        c_declarations = f"""
 typedef {coord_dtype.to_pyxtype()} coord_t;
-typedef {item_dtype.base_c_type} pyx_item_t[{item_size}];
-typedef struct item_t {{
-    {item_dtype.base_c_type} data[{item_size}];
-}} item_t;
+typedef {item_dtype.base_c_type} item_base_t;
+"""
+
+        if item_is_array:
+            pyx_declarations += f"""
+    ctypedef item_base_t pyx_item_t[{item_size}]
+"""
+
+            c_declarations += f"""
+typedef item_base_t pyx_item_t[{item_size}];
 """
         else:
-            pyx_declarations = f"""
-    # coordinate type to use:
-    ctypedef {coord_dtype.to_pyxtype()} coord_t
-
-    # C and PYX items are the same by default:
-    ctypedef {item_dtype.to_pyxtype()} item_t
-    ctypedef {item_dtype.to_pyxtype()} pyx_item_t
+            pyx_declarations += """
+    ctypedef item_base_t pyx_item_t
 """
-            c_declarations = f"""
-typedef {coord_dtype.to_pyxtype()} coord_t;
-typedef {item_dtype.to_pyxtype()} item_t;
-typedef {item_dtype.to_pyxtype()} pyx_item_t;
+            c_declarations += """
+typedef item_base_t pyx_item_t;
 """
 
-        if item_is_array:
-            c_function_implementations = """
+        ##########################################
+        # item_t declaration (PYX and C version) #
+        ##########################################
+
+        pyx_item_t_declaration = cls.pyx_item_t_declaration
+        c_item_t_declaration = cls.c_item_t_declaration
+
+        if not pyx_item_t_declaration:
+            if item_is_array:
+                # item_t can't be an array in rtree, arrays can't be assigned
+                # to (and this is needed inside rtree). So we make item_t a
+                # struct with field `data` to hold the array.
+                pyx_item_t_declaration = f"""
+    cdef struct item_t:
+        item_base_t data[{item_size}]
+"""
+            else:
+                pyx_item_t_declaration = """
+    ctypedef item_base_t item_t
+"""
+
+        if not c_item_t_declaration:
+            if item_is_array:
+                c_item_t_declaration = f"""
+typedef struct item_t {{
+    item_base_t data[{item_size}];
+}} item_t;
+"""
+            else:
+                c_item_t_declaration = """
+typedef item_base_t item_t;
+"""
+
+        pyx_declarations += pyx_item_t_declaration
+        c_declarations += c_item_t_declaration
+
+        ####################################
+        # pyx_item_t <-> item_t converters #
+        ####################################
+
+        c_function_implementations = cls.c_converter_functions
+
+        if not c_function_implementations:
+            if item_is_array:
+                c_function_implementations = """
 inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
     item_t c_item;
     memcpy(&c_item, *pyx_item, sizeof(item_t));
@@ -59,9 +149,8 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
     memcpy(pyx_item, &c_item, sizeof(item_t));
 }
         """
-
-        else:
-            c_function_implementations = """
+            else:
+                c_function_implementations = """
 // default PYX<->C converters, just casting
 inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
     return (item_t)*pyx_item;
@@ -70,6 +159,10 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
     memcpy(pyx_item, &c_item, sizeof(item_t));
 }
         """
+
+        ############################################
+        # create wrapper from template and compile #
+        ############################################
 
         src_dir = Path(__file__).parent
         wrapper_pyx = open(src_dir / "src_wrapper.pyx").read()

@@ -72,5 +72,24 @@ def test_array_item():
         rtree.insert_point_item(np.array([i, i*2, i*3], dtype="uint64"), np.array([i, i], dtype="float64"))
 
 def test_edge_rtree():
-    rtree = RTree("uint64", "double", 2)
-    edge_rtree = EdgeRTree("uint64", "double", 2)
+    edge_rtree = EdgeRTree("uint64[2]", "double", 2)
+
+    edge_rtree.insert_bb_items(
+        np.array([
+            [0, 1],
+            [10, 11],
+        ], dtype="uint64"),
+        np.array([
+            [0.0, 0.0],
+            [10.0, 10.0],
+        ], dtype="double"),
+        np.array([
+            [1.0, 1.0],
+            [11.0, 11.0],
+        ], dtype="double")
+    )
+
+    edges = edge_rtree.nearest(np.array([0.5, 0.5]), k=1)
+    assert len(edges) == 1
+    assert edges[0, 0] == 0
+    assert edges[0, 1] == 1
