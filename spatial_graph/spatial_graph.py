@@ -1,6 +1,7 @@
 from .graph import Graph
 from .rtree import RTree
 from .dtypes import DType
+import numpy as np
 
 
 class SpatialGraph(Graph):
@@ -44,7 +45,10 @@ class SpatialGraph(Graph):
         if edge_inclusion not in SpatialGraph.edge_inclusion_values:
             raise ValueError("edge_inclusion has to be in {edge_inclusion_values}")
 
-        edges = self.edges_by_nodes(nodes)
+        if len(nodes) == 0:
+            edges = np.zeros(shape=(0, 2), dtype=self.node_dtype)
+        else:
+            edges = self.edges_by_nodes(nodes)
 
         if edge_inclusion == "incident":
             return nodes, edges
@@ -57,3 +61,6 @@ class SpatialGraph(Graph):
         if self.position_attr in kwargs:
             return kwargs[self.position_attr]
         raise RuntimeError(f"position attribute '{self.position_attr}' not given")
+
+    def num_nodes(self):
+        return len(self.nodes)
