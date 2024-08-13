@@ -10,6 +10,7 @@ cdef extern from *:
     #define false 0
     #define true 1
 
+    C_MACROS
     #define DIMS NUM_DIMS
 
     C_DECLARATIONS

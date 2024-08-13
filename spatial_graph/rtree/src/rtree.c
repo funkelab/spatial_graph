@@ -55,11 +55,11 @@ static int rc_fetch_add(rc_t *ptr, int delta) {
 #endif
 
 #define abs(x) ({ __typeof__ (x) _x = (x); _x >= 0 ? _x : -_x; })
-#define min(a,b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a < _b ? _a : _b; })
 enum kind {
 	LEAF = 1,
 	BRANCH = 2,
-	ITEM = 3,
+	ITEM_BY_BB = 3, // for priority queue, item enqueued by bb distance
+	ITEM = 4        // for priority queue, item enqueued with exact distance
 };
 
 struct rect {
@@ -83,8 +83,11 @@ struct element {
 	coord_t distance;
 	enum kind kind;
 	union {
-		struct node* node;
-		item_t item;
+		struct node* node;  // if kind == LEAF or BRANCH
+		struct {            // if kind == ITEM_BY_BB or ITEM
+			item_t item;
+			struct rect *rect;
+		};
 	};
 };
 
@@ -211,6 +214,10 @@ static inline coord_t max0(coord_t x, coord_t y) {
 static bool feq(coord_t a, coord_t b) {
 	return !(a < b || a > b);
 }
+
+#ifdef KNN_USE_EXACT_DISTANCE
+inline coord_t distance(const coord_t point[], const struct rect *rect, const struct item_t item);
+#endif
 
 static struct node *node_new(struct rtree *tr, enum kind kind) {
 	struct node *node = (struct node *)tr->malloc(sizeof(struct node));
@@ -685,7 +692,7 @@ void rtree_search(const struct rtree *tr, const coord_t min[],
 	}
 }
 
-coord_t distance(const coord_t point[], struct rect *rect) {
+coord_t distance_bb(const coord_t point[], struct rect *rect) {
 
 	coord_t dist2 = 0;
 
@@ -694,7 +701,7 @@ coord_t distance(const coord_t point[], struct rect *rect) {
 
 	for (int i = 0; i < DIMS; i++) {
 		dist2 += pow(
-			min(
+			min0(
 				abs(point[i] - rect->min[i]),
 				abs(point[i] - rect->max[i])
 			),
@@ -727,17 +734,36 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 		struct element next_element = dequeue(tr->queue);
 
 		if (next_element.kind == ITEM) {
-			// We found an ITEM in the queue, whose bounding box is next closest
+			// We found an ITEM with an exact distance that is the next closest
 			// to the query point.
 
-			// Here, we could calculate a more accurate distance than the one
+			// Report the item and stop searching if the user function returns
+			// false:
+			bool keep_going = iter(next_element.item, next_element.distance, udata);
+			if (!keep_going) {
+				return true;
+			}
+
+		} else if (next_element.kind == ITEM_BY_BB) {
+			// We found an ITEM_BY_BB in the queue, whose bounding box is next
+			// closest to the query point.
+
+			// Here, we can calculate a more accurate distance than the one
 			// used in the queue (e.g., distance to a line is poorly
 			// approximated by distance to bounding box of line). If that
 			// distance is larger than the next element on the queue, enqueue
-			// the item again and continue the while-loop. This would also
-			// require a new 'kind' so that we know that the distance is
-			// accurate. Right now, there is no reason to do so, since all items
-			// in the r-tree are only bounding boxes.
+			// the item again with kind ITEM and continue the while-loop.
+
+#ifdef KNN_USE_EXACT_DISTANCE
+			next_element.distance = distance(point, next_element.rect, next_element.item);
+			if (next_element.distance > peek(tr->queue).distance) {
+				next_element.kind = ITEM;
+				if (!enqueue(tr->queue, next_element)) {
+					return false;
+				}
+				continue;
+			}
+#endif
 
 			// Report the item and stop searching if the user function returns
 			// false:
@@ -755,9 +781,10 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 			for (int i = 0; i < leaf->count; i++) {
 
 				struct element item_element = {
-					.distance = distance(point, &leaf->rects[i]),
-					.kind = ITEM,
-					.item = leaf->items[i]
+					.distance = distance_bb(point, &leaf->rects[i]),
+					.kind = ITEM_BY_BB,
+					.item = leaf->items[i],
+					.rect = &leaf->rects[i]
 				};
 				if (!enqueue(tr->queue, item_element)) {
 					return false;
@@ -773,7 +800,7 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 			for (int i = 0; i < branch->count; i++) {
 
 				struct element node_element = {
-					.distance = distance(point, &branch->rects[i]),
+					.distance = distance_bb(point, &branch->rects[i]),
 					.kind = branch->nodes[i]->kind,  // BRANCH or LEAF
 					.node = branch->nodes[i]
 				};

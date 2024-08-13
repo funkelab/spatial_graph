@@ -55,6 +55,9 @@ class RTree:
     # overwrite in subclasses for custom converters
     c_converter_functions = None
 
+    # overwrite in subclasses for custom distance computation
+    c_distance_function = None
+
     def __new__(
         cls,
         item_dtype,
@@ -160,12 +163,22 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
 }
         """
 
+        ############################
+        # custom distance function #
+        ############################
+
+        c_macros = ""
+        if cls.c_distance_function:
+            c_macros += "#define KNN_USE_EXACT_DISTANCE\n"
+            c_function_implementations += cls.c_distance_function
+
         ############################################
         # create wrapper from template and compile #
         ############################################
 
         src_dir = Path(__file__).parent
         wrapper_pyx = open(src_dir / "src_wrapper.pyx").read()
+        wrapper_pyx = wrapper_pyx.replace("C_MACROS", c_macros)
         wrapper_pyx = wrapper_pyx.replace("PYX_DECLARATIONS", pyx_declarations)
         wrapper_pyx = wrapper_pyx.replace("C_DECLARATIONS", c_declarations)
         wrapper_pyx = wrapper_pyx.replace(
