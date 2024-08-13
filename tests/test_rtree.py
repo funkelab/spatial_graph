@@ -74,17 +74,17 @@ def test_array_item():
 def test_edge_rtree():
     edge_rtree = EdgeRTree("uint64[2]", "double", 2)
 
-    edge_rtree.insert_bb_items(
+    edge_rtree.insert_edges(
         np.array([
             [0, 1],
             [10, 11],
         ], dtype="uint64"),
         np.array([
-            [0.0, 0.0],
+            [1.0, 1.0],
             [10.0, 10.0],
         ], dtype="double"),
         np.array([
-            [1.0, 1.0],
+            [0.0, 0.0],
             [11.0, 11.0],
         ], dtype="double")
     )
