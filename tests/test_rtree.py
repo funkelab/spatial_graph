@@ -69,24 +69,37 @@ def test_nearest():
 def test_array_item():
     rtree = RTree("uint64[3]", "double", 2)
     for i in range(100):
-        rtree.insert_point_item(np.array([i, i*2, i*3], dtype="uint64"), np.array([i, i], dtype="float64"))
+        rtree.insert_point_item(
+            np.array([i, i * 2, i * 3], dtype="uint64"),
+            np.array([i, i], dtype="float64"),
+        )
+
 
 def test_edge_rtree():
     edge_rtree = EdgeRTree("uint64[2]", "double", 2)
 
     edge_rtree.insert_edges(
-        np.array([
-            [0, 1],
-            [10, 11],
-        ], dtype="uint64"),
-        np.array([
-            [1.0, 1.0],
-            [10.0, 10.0],
-        ], dtype="double"),
-        np.array([
-            [0.0, 0.0],
-            [11.0, 11.0],
-        ], dtype="double")
+        np.array(
+            [
+                [0, 1],
+                [10, 11],
+            ],
+            dtype="uint64",
+        ),
+        np.array(
+            [
+                [1.0, 1.0],
+                [10.0, 10.0],
+            ],
+            dtype="double",
+        ),
+        np.array(
+            [
+                [0.0, 0.0],
+                [11.0, 11.0],
+            ],
+            dtype="double",
+        ),
     )
 
     edges = edge_rtree.nearest(np.array([0.5, 0.5]), k=1)
@@ -94,22 +107,32 @@ def test_edge_rtree():
     assert edges[0, 0] == 0
     assert edges[0, 1] == 1
 
+
 def test_edge_rtree_nearest():
     edge_rtree = EdgeRTree("uint64[2]", "double", 2)
 
     edge_rtree.insert_edges(
-        np.array([
-            [0, 1],
-            [2, 3],
-        ], dtype="uint64"),
-        np.array([
-            [0.0, 0.0],
-            [0.0, 1.0],
-        ], dtype="double"),
-        np.array([
-            [1.0, 1.0],
-            [1.0, 0.0],
-        ], dtype="double")
+        np.array(
+            [
+                [0, 1],
+                [2, 3],
+            ],
+            dtype="uint64",
+        ),
+        np.array(
+            [
+                [0.0, 0.0],
+                [0.0, 1.0],
+            ],
+            dtype="double",
+        ),
+        np.array(
+            [
+                [1.0, 1.0],
+                [1.0, 0.0],
+            ],
+            dtype="double",
+        ),
     )
 
     # pick the correct edge of two with the same bounding box:
@@ -130,18 +153,27 @@ def test_edge_rtree_nearest():
     edge_rtree = EdgeRTree("uint64[2]", "double", 2)
 
     edge_rtree.insert_edges(
-        np.array([
-            [0, 1],
-            [2, 3],
-        ], dtype="uint64"),
-        np.array([
-            [0.0, 0.0],
-            [0.0, 100.0],
-        ], dtype="double"),
-        np.array([
-            [1.0, 1.0],
-            [100.0, 0.0],
-        ], dtype="double")
+        np.array(
+            [
+                [0, 1],
+                [2, 3],
+            ],
+            dtype="uint64",
+        ),
+        np.array(
+            [
+                [0.0, 0.0],
+                [0.0, 100.0],
+            ],
+            dtype="double",
+        ),
+        np.array(
+            [
+                [1.0, 1.0],
+                [100.0, 0.0],
+            ],
+            dtype="double",
+        ),
     )
 
     edges = edge_rtree.nearest(np.array([2.0, 2.0]), k=1)
