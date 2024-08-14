@@ -108,12 +108,16 @@ cdef struct nearest_results:
     size_t size
     size_t max_size
     pyx_items_t items
+    coord_t *distances
 
 
-cdef init_nearest_results_from_memview(nearest_results* r, API_ITEMS_MEMVIEW_TYPE items):
+cdef init_nearest_results_from_memview(nearest_results* r,
+                                       API_ITEMS_MEMVIEW_TYPE items,
+                                       coord_t[::1] distances):
     r.size = 0
     r.max_size = len(items)
     r.items = memview_to_pyx_items_t(items)
+    r.distances = &distances[0] if distances is not None else NULL
 
 
 cdef bint nearest_iterator(
@@ -124,6 +128,8 @@ cdef bint nearest_iterator(
 
     cdef nearest_results* results = <nearest_results*>udata
     copy_c_to_pyx_item(item, &results.items[results.size])
+    if results.distances != NULL:
+        results.distances[results.size] = distance
     results.size += 1
     return results.size < results.max_size
 
@@ -191,14 +197,18 @@ cdef class RTree:
 
         return items
 
-    def nearest(self, coord_t[::1] point, size_t k):
+    def nearest(self, coord_t[::1] point, size_t k, return_distances=False):
 
         cdef nearest_results results
 
         items = np.zeros((k, ITEM_LENGTH), dtype="NP_ITEM_DTYPE")
+        if return_distances:
+            distances = np.zeros((k,), dtype="NP_COORD_DTYPE")
+        else:
+            distances = None
         if k == 0:
             return items
-        init_nearest_results_from_memview(&results, items)
+        init_nearest_results_from_memview(&results, items, distances)
 
         all_good = rtree_nearest(
             self._rtree,
@@ -209,7 +219,10 @@ cdef class RTree:
         if not all_good:
             raise RuntimeError("RTree nearest neighbor search ran out of memory.")
 
-        return items[:results.size]
+        if return_distances:
+            return items[:results.size], distances[:results.size]
+        else:
+            return items[:results.size]
 
     def delete_items(
             self,

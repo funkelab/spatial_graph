@@ -186,6 +186,7 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
         )
 
         wrapper_pyx = wrapper_pyx.replace("NP_ITEM_DTYPE", item_dtype.base)
+        wrapper_pyx = wrapper_pyx.replace("NP_COORD_DTYPE", coord_dtype.base)
         wrapper_pyx = wrapper_pyx.replace(
             "API_ITEMS_MEMVIEW_TYPE", item_dtype.to_pyxtype(add_dim=True)
         )

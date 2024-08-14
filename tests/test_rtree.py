@@ -148,3 +148,28 @@ def test_edge_rtree_nearest():
     assert len(edges) == 1
     assert edges[0, 0] == 0
     assert edges[0, 1] == 1
+
+    # check that the distances are correct
+    edges, distances = edge_rtree.nearest(
+        np.array([2.0, 2.0]), k=1, return_distances=True
+    )
+    assert len(edges) == 1
+    assert len(distances) == 1
+    assert edges[0, 0] == 0
+    assert edges[0, 1] == 1
+    np.testing.assert_almost_equal(distances[0], 2.0)
+
+    edges, distances = edge_rtree.nearest(
+        np.array([0.5, 0.5]), k=1, return_distances=True
+    )
+    np.testing.assert_almost_equal(distances[0], 0.0)
+
+    edges, distances = edge_rtree.nearest(
+        np.array([2.0, 0.0]), k=1, return_distances=True
+    )
+    np.testing.assert_almost_equal(distances[0], 2.0)
+
+    edges, distances = edge_rtree.nearest(
+        np.array([1.0, 0.0]), k=1, return_distances=True
+    )
+    np.testing.assert_almost_equal(distances[0], 0.5)
