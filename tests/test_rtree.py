@@ -1,4 +1,4 @@
-from spatial_graph import RTree, EdgeRTree
+from spatial_graph import RTree, LineRTree
 import numpy as np
 
 
@@ -75,10 +75,10 @@ def test_array_item():
         )
 
 
-def test_edge_rtree():
-    edge_rtree = EdgeRTree("uint64[2]", "double", 2)
+def test_line_rtree():
+    line_rtree = LineRTree("uint64[2]", "double", 2)
 
-    edge_rtree.insert_edges(
+    line_rtree.insert_lines(
         np.array(
             [
                 [0, 1],
@@ -102,16 +102,16 @@ def test_edge_rtree():
         ),
     )
 
-    edges = edge_rtree.nearest(np.array([0.5, 0.5]), k=1)
-    assert len(edges) == 1
-    assert edges[0, 0] == 0
-    assert edges[0, 1] == 1
+    lines = line_rtree.nearest(np.array([0.5, 0.5]), k=1)
+    assert len(lines) == 1
+    assert lines[0, 0] == 0
+    assert lines[0, 1] == 1
 
 
-def test_edge_rtree_nearest():
-    edge_rtree = EdgeRTree("uint64[2]", "double", 2)
+def test_line_rtree_nearest():
+    line_rtree = LineRTree("uint64[2]", "double", 2)
 
-    edge_rtree.insert_edges(
+    line_rtree.insert_lines(
         np.array(
             [
                 [0, 1],
@@ -135,24 +135,24 @@ def test_edge_rtree_nearest():
         ),
     )
 
-    # pick the correct edge of two with the same bounding box:
+    # pick the correct line of two with the same bounding box:
 
-    edges = edge_rtree.nearest(np.array([0.6, 0.6]), k=1)
-    assert len(edges) == 1
-    assert edges[0, 0] == 0
-    assert edges[0, 1] == 1
+    lines = line_rtree.nearest(np.array([0.6, 0.6]), k=1)
+    assert len(lines) == 1
+    assert lines[0, 0] == 0
+    assert lines[0, 1] == 1
 
-    edges = edge_rtree.nearest(np.array([0.4, 0.6]), k=1)
-    assert len(edges) == 1
-    assert edges[0, 0] == 2
-    assert edges[0, 1] == 3
+    lines = line_rtree.nearest(np.array([0.4, 0.6]), k=1)
+    assert len(lines) == 1
+    assert lines[0, 0] == 2
+    assert lines[0, 1] == 3
 
-    # pick the correct edge that is closer to point, even though the bb is not
+    # pick the correct line that is closer to point, even though the bb is not
     # the closest one
 
-    edge_rtree = EdgeRTree("uint64[2]", "double", 2)
+    line_rtree = LineRTree("uint64[2]", "double", 2)
 
-    edge_rtree.insert_edges(
+    line_rtree.insert_lines(
         np.array(
             [
                 [0, 1],
@@ -176,32 +176,32 @@ def test_edge_rtree_nearest():
         ),
     )
 
-    edges = edge_rtree.nearest(np.array([2.0, 2.0]), k=1)
-    assert len(edges) == 1
-    assert edges[0, 0] == 0
-    assert edges[0, 1] == 1
+    lines = line_rtree.nearest(np.array([2.0, 2.0]), k=1)
+    assert len(lines) == 1
+    assert lines[0, 0] == 0
+    assert lines[0, 1] == 1
 
     # check that the distances are correct
-    edges, distances = edge_rtree.nearest(
+    lines, distances = line_rtree.nearest(
         np.array([2.0, 2.0]), k=1, return_distances=True
     )
-    assert len(edges) == 1
+    assert len(lines) == 1
     assert len(distances) == 1
-    assert edges[0, 0] == 0
-    assert edges[0, 1] == 1
+    assert lines[0, 0] == 0
+    assert lines[0, 1] == 1
     np.testing.assert_almost_equal(distances[0], 2.0)
 
-    edges, distances = edge_rtree.nearest(
+    lines, distances = line_rtree.nearest(
         np.array([0.5, 0.5]), k=1, return_distances=True
     )
     np.testing.assert_almost_equal(distances[0], 0.0)
 
-    edges, distances = edge_rtree.nearest(
+    lines, distances = line_rtree.nearest(
         np.array([2.0, 0.0]), k=1, return_distances=True
     )
     np.testing.assert_almost_equal(distances[0], 2.0)
 
-    edges, distances = edge_rtree.nearest(
+    lines, distances = line_rtree.nearest(
         np.array([1.0, 0.0]), k=1, return_distances=True
     )
     np.testing.assert_almost_equal(distances[0], 0.5)

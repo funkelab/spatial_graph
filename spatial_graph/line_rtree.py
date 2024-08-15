@@ -1,8 +1,7 @@
 from .rtree import RTree
 
 
-class EdgeRTree(RTree):
-
+class LineRTree(RTree):
     pyx_item_t_declaration = f"""
     cdef struct item_t:
         item_base_t u
@@ -101,24 +100,26 @@ inline coord_t distance(const coord_t point[], const struct rect *rect, const st
 }
 """
 
-    def insert_edges(self, edges, froms, tos):
-        """Insert a list of edges.
+    def insert_lines(self, lines, froms, tos):
+        """Insert a list of lines.
 
         Args:
 
-            edges (`ndarray`, shape `(n, 2)`):
+            lines (`ndarray`, shape `(n, [m])`:
 
-                Array containing the edges as `(u, v)` rows, where `u` and `v`
-                are the IDs of the nodes.
+                Array containing the line identifiers (as passed as the
+                `item_dtype` to the constructor). If the identifiers are an
+                array of size `m`, the expected shape is `(n, m)` where `n` is
+                the number of lines, otherwise the shape is just `(n,)`.
 
             froms (`ndarray`, shape `(n, d)`):
 
-                The coordinates of the "from" node `u` of the cooresponding edge.
+                The coordinates of the start of each line.
 
             tos (`ndarray`, shape `(n, d)`):
 
-                The coordinates of the "to" node `v` of the cooresponding edge.
+                The coordinates of the end of each line.
         """
         # we just forward to bb insert, "from" and "to" will be used to compute
         # the bounding box in our custom converter above
-        return self.insert_bb_items(edges, froms, tos)
+        return self.insert_bb_items(lines, froms, tos)
