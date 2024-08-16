@@ -1,5 +1,5 @@
 from .graph import Graph
-from .point_rtree import PointRTree
+from .rtree import PointRTree
 from .dtypes import DType
 
 

@@ -1,9 +1,9 @@
-from spatial_graph import RTree, LineRTree
+from spatial_graph import PointRTree, LineRTree
 import numpy as np
 
 
 def test_search():
-    rtree = RTree("uint64", "double", 2)
+    rtree = PointRTree("uint64", "double", 2)
     for i in range(100):
         rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
@@ -19,7 +19,7 @@ def test_search():
 
 
 def test_delete():
-    rtree = RTree("uint64", "double", 2)
+    rtree = PointRTree("uint64", "double", 2)
     for i in range(100):
         rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
@@ -37,7 +37,7 @@ def test_delete():
 
 
 def test_nearest():
-    rtree = RTree("uint64", "double", 2)
+    rtree = PointRTree("uint64", "double", 2)
     for i in range(100):
         rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
@@ -53,7 +53,7 @@ def test_nearest():
     assert list(points) == list(range(100))
 
     # ask an empty tree
-    rtree = RTree("uint64", "double", 2)
+    rtree = PointRTree("uint64", "double", 2)
     points = rtree.nearest(np.array([0.0, 0.0]), k=3)
     assert len(points) == 0
 
@@ -67,7 +67,7 @@ def test_nearest():
 
 
 def test_array_item():
-    rtree = RTree("uint64[3]", "double", 2)
+    rtree = PointRTree("uint64[3]", "double", 2)
     for i in range(100):
         rtree.insert_point_item(
             np.array([i, i * 2, i * 3], dtype="uint64"),
