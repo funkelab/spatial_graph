@@ -53,17 +53,23 @@ def test_nearest():
     assert list(points) == list(range(100))
 
     # ask an empty tree
-    rtree = PointRTree("uint64", "double", 2)
-    points = rtree.nearest(np.array([0.0, 0.0]), k=3)
+    rtree = PointRTree("uint64", "double", 3)
+    points = rtree.nearest(np.array([0.0, 0.0, 0.0]), k=3)
     assert len(points) == 0
 
     # ask a very big tree
+    all_points = np.random.random((10_000_000, 3)).astype("double")
     rtree.insert_point_items(
         np.arange(10_000_000, dtype="uint64"),
-        np.random.random((10_000_000, 2)).astype("double"),
+        all_points,
     )
     points = rtree.nearest(np.array([0.5, 0.5]), k=100_000)
     assert len(points) == 100_000
+
+    # ensure that we find the right item in a big tree
+    for i in np.random.randint(0, 10_000_000, size=(1000,)):
+        points = rtree.nearest(all_points[i], k=1)
+        assert points[0] == i
 
 
 def test_array_item():
