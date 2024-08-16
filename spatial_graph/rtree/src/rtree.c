@@ -696,17 +696,14 @@ coord_t distance_bb(const coord_t point[], struct rect *rect) {
 
 	coord_t dist2 = 0;
 
-	if (rect_contains_point(rect, point))
-		return dist2;
-
 	for (int i = 0; i < DIMS; i++) {
-		dist2 += pow(
-			min0(
-				abs(point[i] - rect->min[i]),
-				abs(point[i] - rect->max[i])
-			),
-			2
-		);
+		if (point[i] < rect->min[i]) {
+			dist2 += pow(rect->min[i] - point[i], 2);
+		} else if (point[i] > rect->max[i]) {
+			dist2 += pow(point[i] - rect->max[i], 2);
+		}
+		// else: coordinate is within min and max, does not contribute to
+		// distance
 	}
 
 	return dist2;
