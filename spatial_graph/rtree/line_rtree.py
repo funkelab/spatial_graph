@@ -1,4 +1,5 @@
 from .rtree import RTree
+import numpy as np
 
 
 class LineRTree(RTree):
@@ -18,18 +19,18 @@ typedef struct item_t {{
 """
 
     c_converter_functions = """
-inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *from, coord_t *to) {
+inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *start, coord_t *end) {
     item_t item;
     coord_t tmp;
     item.u = (*pyx_item)[0];
     item.v = (*pyx_item)[1];
     for (int d = 0; d < NUM_DIMS; d++) {
-        item.corner_mask[d] = (from[d] < to[d]);
+        item.corner_mask[d] = (start[d] < end[d]);
         if (!item.corner_mask[d]) {
             // swap coordinates to create bounding box
-            tmp = from[d];
-            from[d] = to[d];
-            to[d] = tmp;
+            tmp = start[d];
+            start[d] = end[d];
+            end[d] = tmp;
         }
     }
     return item;
@@ -49,7 +50,7 @@ inline coord_t length2(const coord_t x[]) {
     return length2;
 }
 
-inline coord_t point_segment_dist2(const coord_t point[], const coord_t from[], const coord_t to[]) {
+inline coord_t point_segment_dist2(const coord_t point[], const coord_t start[], const coord_t end[]) {
 
     coord_t a[DIMS];
     coord_t b[DIMS];
@@ -57,9 +58,9 @@ inline coord_t point_segment_dist2(const coord_t point[], const coord_t from[], 
 
     for (int d = 0; d < DIMS; d++) {
 
-        // subtract "from" from "to" and "point" to get "a" and "b"
-        a[d] = to[d] - from[d];
-        b[d] = point[d] - from[d];
+        // subtract "start" from "end" and "point" to get "a" and "b"
+        a[d] = end[d] - start[d];
+        b[d] = point[d] - start[d];
 
         // compute dot product "alpha" of "a" and "b"
         alpha += a[d] * b[d];
@@ -85,41 +86,65 @@ inline coord_t point_segment_dist2(const coord_t point[], const coord_t from[], 
 }
 
 inline coord_t distance(const coord_t point[], const struct rect *rect, const struct item_t item) {
-    coord_t from[DIMS];
-    coord_t to[DIMS];
+    coord_t start[DIMS];
+    coord_t end[DIMS];
     for (int d = 0; d < DIMS; d++) {
         if (item.corner_mask[d]) {
-            from[d] = rect->min[d];
-            to[d] = rect->max[d];
+            start[d] = rect->min[d];
+            end[d] = rect->max[d];
         } else {
-            from[d] = rect->max[d];
-            to[d] = rect->min[d];
+            start[d] = rect->max[d];
+            end[d] = rect->min[d];
         }
     }
-    return point_segment_dist2(point, from, to);
+    return point_segment_dist2(point, start, end);
 }
 """
 
-    def insert_lines(self, lines, froms, tos):
+    def insert_line(self, line, start, end):
+        """Convenience function to insert a single line. To insert multiple
+        lines in bulk, please use the faster `insert_lines`.
+
+        Args:
+
+            line (`item_dtype`):
+
+                The line identifier (as passed as the `item_dtype` to the
+                constructor).
+
+            start (`ndarray`, shape `(d,)`):
+
+                The coordinates of the start of the line.
+
+            end (`ndarray`, shape `(d,)`):
+
+                The coordinates of the end of the line.
+        """
+        lines = np.array([line], dtype=self.item_dtype.base)
+        starts = start[np.newaxis]
+        ends = end[np.newaxis]
+        return self.insert_bb_items(lines, starts, ends)
+
+    def insert_lines(self, lines, starts, ends):
         """Insert a list of lines.
 
         Args:
 
-            lines (`ndarray`, shape `(n, [m])`:
+            lines (`ndarray`, shape `(n, [m])`):
 
                 Array containing the line identifiers (as passed as the
                 `item_dtype` to the constructor). If the identifiers are an
                 array of size `m`, the expected shape is `(n, m)` where `n` is
                 the number of lines, otherwise the shape is just `(n,)`.
 
-            froms (`ndarray`, shape `(n, d)`):
+            starts (`ndarray`, shape `(n, d)`):
 
                 The coordinates of the start of each line.
 
-            tos (`ndarray`, shape `(n, d)`):
+            ends (`ndarray`, shape `(n, d)`):
 
                 The coordinates of the end of each line.
         """
-        # we just forward to bb insert, "from" and "to" will be used to compute
+        # we just forward to bb insert, "start" and "end" will be used to compute
         # the bounding box in our custom converter above
-        return self.insert_bb_items(lines, froms, tos)
+        return self.insert_bb_items(lines, starts, ends)

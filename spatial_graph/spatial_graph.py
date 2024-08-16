@@ -1,6 +1,7 @@
 from .graph import Graph
-from .rtree import PointRTree
+from .rtree import PointRTree, LineRTree
 from .dtypes import DType
+import numpy as np
 
 
 class SpatialGraph(Graph):
@@ -24,6 +25,7 @@ class SpatialGraph(Graph):
         self.position_attr = position_attr
         coord_dtype = DType(node_attr_dtypes[position_attr]).base
         self._node_rtree = PointRTree(node_dtype, coord_dtype, ndims)
+        self._edge_rtree = LineRTree(f"{node_dtype}[2]", coord_dtype, ndims)
 
     def add_node(self, node, **kwargs):
         position = self._get_position(kwargs)
@@ -34,6 +36,19 @@ class SpatialGraph(Graph):
         positions = self._get_position(kwargs)
         self._node_rtree.insert_point_items(nodes, positions)
         super().add_nodes(nodes, **kwargs)
+
+    def add_edge(self, edge, **kwargs):
+        edge = np.array(edge, dtype=self.node_dtype)
+        position_u = getattr(self.node_attrs[edge[0]], self.position_attr)
+        position_v = getattr(self.node_attrs[edge[1]], self.position_attr)
+        self._edge_rtree.insert_line(edge, position_u, position_v)
+        super().add_edge(edge, **kwargs)
+
+    def add_edges(self, edges, **kwargs):
+        starts = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
+        ends = getattr(self.node_attrs[edges[:, 1]], self.position_attr)
+        self._edge_rtree.insert_lines(edges, starts, ends)
+        super().add_edges(edges, **kwargs)
 
     def query_in_roi(self, roi, edge_inclusion=None):
         nodes = self._node_rtree.search(roi[0], roi[1])
