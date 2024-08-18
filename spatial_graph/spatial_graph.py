@@ -68,6 +68,12 @@ class SpatialGraph(Graph):
         elif edge_inclusion == "entering":
             return nodes, []  # TODO
 
+    def query_nearest_nodes(self, point, k, return_distances=False):
+        return self._node_rtree.nearest(point, k, return_distances)
+
+    def query_nearest_edges(self, point, k, return_distances=False):
+        return self._edge_rtree.nearest(point, k, return_distances)
+
     def _get_position(self, kwargs):
         if self.position_attr in kwargs:
             return kwargs[self.position_attr]
