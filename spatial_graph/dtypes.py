@@ -166,7 +166,7 @@ def dtypes_to_cppclass(class_name, dtypes):
         pyx_code += f"    @property\n"
         pyx_code += f"    def {name}(self):\n"
         if dtype.is_array:
-            pyx_code += f"        return np.array(self._ptr.{name})\n"
+            pyx_code += f"        return <{dtype.base}[:{dtype.size}]>(self._ptr.{name})\n"
         else:
             pyx_code += f"        return self._ptr.{name}\n"
         pyx_code += f"    @{name}.setter\n"
