@@ -347,6 +347,7 @@ cdef class UndirectedGraph:
         cdef NodeIterator node_it = self._graph.begin()
         cdef NodeIterator node_end = self._graph.end()
         cdef Py_ssize_t i = 0
+        cdef NodeData* node_data
 
         # allocate array for data
         cdef Py_ssize_t num_nodes = 0
@@ -360,12 +361,26 @@ cdef class UndirectedGraph:
         # all nodes requested
         if nodes is None:
             while node_it != node_end:
+                %if $dtype.is_array
+                node_data = &self._graph.node_prop(node_it)
+                %for j in range($dtype.size)
+                view[i, $j] = node_data.${name}[$j]
+                %end for
+                %else
                 view[i] = self._graph.node_prop(node_it).${name}
+                %end if
                 inc(node_it)
                 i += 1
         else:
             for i in range(num_nodes):
+                %if $dtype.is_array
+                node_data = &self._graph.node_prop(nodes[i])
+                %for j in range($dtype.size)
+                view[i, $j] = node_data.${name}[$j]
+                %end for
+                %else
                 view[i] = self._graph.node_prop(nodes[i]).${name}
+                %end if
 
         return data
 
@@ -413,6 +428,7 @@ cdef class UndirectedGraph:
         cdef NodeIterator node_end = self._graph.end()
         cdef pair[NeighborsIterator, NeighborsIterator] edges_view
         cdef NodeType u, v
+        cdef EdgeData* edge_data
 
         # allocate array for data
         if us is None and vs is None:
@@ -437,14 +453,28 @@ cdef class UndirectedGraph:
                 while it != end:
                     v = deref(it).first
                     if u < v:
+                        %if $dtype.is_array
+                        edge_data = &deref(it).second.prop()
+                        %for j in range($dtype.size)
+                        view[i, $j] = edge_data.${name}[$j]
+                        %end for
+                        %else
                         view[i] = deref(it).second.prop().$name
+                        %end if
                         i += 1
                     inc(it)
                 inc(node_it)
 
         else:
             for i in range(num_edges):
+                %if $dtype.is_array
+                edge_data = &self._graph.edge_prop(us[i], vs[i])
+                %for j in range($dtype.size)
+                view[i, $j] = edge_data.${name}[$j]
+                %end for
+                %else
                 view[i] = self._graph.edge_prop(us[i], vs[i]).$name
+                %end if
 
         return data
 
