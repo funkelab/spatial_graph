@@ -10,9 +10,4 @@
 // (will keep doubling as needed to accommodate more)
 #define INITIAL_QUEUE_SIZE 256
 
-// workaround to avoid cython warnings, replaces stdbool
-typedef int bool;
-#define false 0
-#define true 1
-
 #endif // __RTREE_CONFIG_H

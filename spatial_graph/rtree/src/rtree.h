@@ -27,24 +27,6 @@ void rtree_free(struct rtree *tr);
 // This operation uses shadowing / copy-on-write.
 struct rtree *rtree_clone(struct rtree *tr);
 
-// rtree_set_item_callbacks sets the item clone and free callbacks that will be
-// called internally by the rtree when items are inserted and removed.
-//
-// These callbacks are optional but may be needed by programs that require
-// copy-on-write support by using the rtree_clone function.
-//
-// The clone function should return true if the clone succeeded or false if the
-// system is out of memory.
-void rtree_set_item_callbacks(struct rtree *tr,
-    bool (*clone)(const item_data_t item, item_data_t *into, void *udata),
-    void (*free)(const item_data_t item, void *udata));
-
-// rtree_set_udata sets the user-defined data.
-//
-// This should be called once after rtree_new() and is only used for
-// the item callbacks as defined in rtree_set_item_callbacks().
-void rtree_set_udata(struct rtree *tr, void *udata);
-
 // rtree_insert inserts an item into the rtree.
 //
 // This operation performs a copy of the data that is pointed to in the second
@@ -56,7 +38,7 @@ void rtree_set_udata(struct rtree *tr, void *udata);
 // When inserting points, the max coordinates is optional (set to NULL).
 //
 // Returns false if the system is out of memory.
-bool rtree_insert(struct rtree *tr, const coord_t *min, const coord_t *max, const item_data_t data);
+bool rtree_insert(struct rtree *tr, const coord_t *min, const coord_t *max, const item_t item);
 
 
 // rtree_search searches the rtree and iterates over each item that intersect
@@ -64,22 +46,22 @@ bool rtree_insert(struct rtree *tr, const coord_t *min, const coord_t *max, cons
 //
 // Returning false from the iter will stop the search.
 void rtree_search(const struct rtree *tr, const coord_t *min, const coord_t *max,
-    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, void *udata),
-    void *udata);
+	bool (*iter)(const coord_t *min, const coord_t *max, const item_t item, void *udata),
+	void *udata);
 
 // Find the nearest neighbors to the given query point.
 //
 // Returning false from the iter will stop the search.
 bool rtree_nearest(struct rtree *tr, const coord_t *point,
-    bool (*iter)(const item_data_t data, coord_t distance, void *udata),
+	bool (*iter)(const item_t item, coord_t distance, void *udata),
 	void *udata);
 
 // rtree_scan iterates over every item in the rtree.
 //
 // Returning false from the iter will stop the scan.
 void rtree_scan(const struct rtree *tr,
-    bool (*iter)(const coord_t *min, const coord_t *max, const item_data_t data, void *udata),
-    void *udata);
+	bool (*iter)(const coord_t *min, const coord_t *max, const item_t item, void *udata),
+	void *udata);
 
 // rtree_count returns the number of items in the rtree.
 size_t rtree_count(const struct rtree *tr);
@@ -91,7 +73,7 @@ size_t rtree_count(const struct rtree *tr);
 // data. The first item that is found is deleted.
 //
 // Returns false if the system is out of memory.
-bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max, const item_data_t data);
+bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max, const item_t item);
 
 // rtree_delete_with_comparator deletes an item from the rtree.
 // This searches the tree for an item that is contained within the provided
@@ -100,9 +82,9 @@ bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max, cons
 //
 // Returns false if the system is out of memory.
 bool rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
-    const coord_t *max, const item_data_t data,
-    int (*compare)(const item_data_t a, const item_data_t b, void *udata),
-    void *udata);
+	const coord_t *max, const item_t item,
+	int (*compare)(const item_t a, const item_t b, void *udata),
+	void *udata);
 
 // rtree_opt_relaxed_atomics activates memory_order_relaxed for all atomic
 // loads. This may increase performance for single-threaded programs.

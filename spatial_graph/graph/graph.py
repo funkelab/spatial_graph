@@ -18,8 +18,16 @@ node_data_template = """
         self._graph.node_prop(node).NAME = RVALUE
 """
 
+node_array_data_template = """
+    def get_node_data_NAME(self, NodeType node):
+        return np.array(self._graph.node_prop(node).NAME)
+
+    def set_node_data_NAME(self, NodeType node, DTYPE NAME):
+        self._graph.node_prop(node).NAME = RVALUE
+"""
+
 nodes_data_template = """
-    def get_nodes_data_NAME(self, NodeType[::1] nodes):
+    def get_nodes_data_NAME(self, NodeType[:] nodes):
 
         cdef NodeIterator node_it = self._graph.begin()
         cdef NodeIterator node_end = self._graph.end()
@@ -46,7 +54,7 @@ nodes_data_template = """
 
         return data
 
-    def set_nodes_data_NAME(self, NodeType[::1] nodes, PYXTYPE NAME):
+    def set_nodes_data_NAME(self, NodeType[:] nodes, PYXTYPE NAME):
 
         cdef NodeIterator node_it = self._graph.begin()
         cdef NodeIterator node_end = self._graph.end()
@@ -223,7 +231,8 @@ class Graph:
 
         node_data_by_name = "\n\n".join(
             [
-                node_data_template.replace("NAME", name)
+                (node_array_data_template if dtype.is_array else node_data_template)
+                .replace("NAME", name)
                 .replace("DTYPE", dtype.to_pyxtype(use_memory_view=True))
                 .replace("RVALUE", dtype.to_rvalue(name=name))
                 for name, dtype in node_attr_dtypes.items()

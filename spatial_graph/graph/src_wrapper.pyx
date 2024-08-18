@@ -101,15 +101,15 @@ NODE_DATA_ARRAYS_POINTERS_SET
                 NodeData(NODE_DATA_ARRAYS_POINTERS_NAMES)
             )
 
-    def add_edge(self, NodeType u, NodeType v, EDGE_DATA_ARGS):
+    def add_edge(self, NodeType[::1] edge, EDGE_DATA_ARGS):
 
 EDGE_DATA_ARRAY_POINTERS_SET
         self._graph.add_edge_with_prop(
-            u, v,
+            edge[0], edge[1],
             EdgeData(EDGE_DATA_ARRAY_POINTERS_NAMES)
         )
 
-    def add_edges(self, NodeType[:, ::1] edges, EDGE_DATA_ARRAY_ARGS):
+    def add_edges(self, NodeType[:, :] edges, EDGE_DATA_ARRAY_ARGS):
 
 EDGE_DATA_ARRAYS_POINTERS_DEF
         for i in range(edges.shape[0]):

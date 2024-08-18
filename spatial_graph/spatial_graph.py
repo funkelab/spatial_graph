@@ -1,6 +1,7 @@
 from .graph import Graph
-from .rtree import RTree
+from .rtree import PointRTree, LineRTree
 from .dtypes import DType
+import numpy as np
 
 
 class SpatialGraph(Graph):
@@ -23,20 +24,34 @@ class SpatialGraph(Graph):
         self.ndims = ndims
         self.position_attr = position_attr
         coord_dtype = DType(node_attr_dtypes[position_attr]).base
-        self._rtree = RTree(node_dtype, coord_dtype, ndims)
+        self._node_rtree = PointRTree(node_dtype, coord_dtype, ndims)
+        self._edge_rtree = LineRTree(f"{node_dtype}[2]", coord_dtype, ndims)
 
     def add_node(self, node, **kwargs):
         position = self._get_position(kwargs)
-        self._rtree.insert_point(node, position)
+        self._node_rtree.insert_point_item(node, position)
         super().add_node(node, **kwargs)
 
     def add_nodes(self, nodes, **kwargs):
         positions = self._get_position(kwargs)
-        self._rtree.insert_points(nodes, positions)
+        self._node_rtree.insert_point_items(nodes, positions)
         super().add_nodes(nodes, **kwargs)
 
+    def add_edge(self, edge, **kwargs):
+        edge = np.array(edge, dtype=self.node_dtype)
+        position_u = getattr(self.node_attrs[edge[0]], self.position_attr)
+        position_v = getattr(self.node_attrs[edge[1]], self.position_attr)
+        self._edge_rtree.insert_line(edge, position_u, position_v)
+        super().add_edge(edge, **kwargs)
+
+    def add_edges(self, edges, **kwargs):
+        starts = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
+        ends = getattr(self.node_attrs[edges[:, 1]], self.position_attr)
+        self._edge_rtree.insert_lines(edges, starts, ends)
+        super().add_edges(edges, **kwargs)
+
     def query_in_roi(self, roi, edge_inclusion=None):
-        nodes = self._rtree.search(roi[0], roi[1])
+        nodes = self._node_rtree.search(roi[0], roi[1])
 
         if not edge_inclusion:
             return nodes
@@ -52,6 +67,12 @@ class SpatialGraph(Graph):
             return nodes, []  # TODO
         elif edge_inclusion == "entering":
             return nodes, []  # TODO
+
+    def query_nearest_nodes(self, point, k, return_distances=False):
+        return self._node_rtree.nearest(point, k, return_distances)
+
+    def query_nearest_edges(self, point, k, return_distances=False):
+        return self._edge_rtree.nearest(point, k, return_distances)
 
     def _get_position(self, kwargs):
         if self.position_attr in kwargs:

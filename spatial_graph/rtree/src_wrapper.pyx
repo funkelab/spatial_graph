@@ -2,20 +2,34 @@ from libc.stdint cimport *
 import numpy as np
 
 
-ctypedef NODE_TYPE item_data_t
-ctypedef COORD_TYPE coord_t
 ctypedef int bool
 
 cdef extern from *:
     """
+    typedef int bool;
+    #define false 0
+    #define true 1
+
+    C_MACROS
     #define DIMS NUM_DIMS
-    typedef NODE_TYPE item_data_t;
-    typedef COORD_TYPE coord_t;
+
+    C_DECLARATIONS
+    typedef pyx_item_t* pyx_items_t;
 
     #include "src/rtree.h"
     #include "src/rtree.c"
 
+    C_FUNCTION_IMPLEMENTATIONS
     """
+
+    PYX_DECLARATIONS
+    ctypedef pyx_item_t* pyx_items_t
+
+    # PYX <-> C converters
+    cdef item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t* max)
+    cdef void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item)
+
+    # rtree API
     cdef struct rtree
     cdef rtree *rtree_new()
     cdef void rtree_free(rtree *tr)
@@ -23,7 +37,7 @@ cdef extern from *:
         rtree *tr,
         const coord_t *min,
         const coord_t *max,
-        const item_data_t data)
+        const item_t item)
     cdef void rtree_search(
         const rtree *tr,
         const coord_t *min,
@@ -31,14 +45,14 @@ cdef extern from *:
         bool (*iter)(
             const coord_t *min,
             const coord_t *max,
-            const item_data_t data,
+            const item_t item,
             void *udata),
         void *udata)
     cdef bool rtree_nearest(
         rtree *tr,
         const coord_t *point,
         bool (*iter)(
-            const item_data_t data,
+            const item_t item,
             coord_t distance,
             void *udata),
         void *udata)
@@ -46,13 +60,19 @@ cdef extern from *:
         rtree *tr,
         const coord_t *min,
         const coord_t *max,
-        const item_data_t data)
+        const item_t item)
     cdef size_t rtree_count(const rtree *tr)
+
+
+cdef pyx_items_t memview_to_pyx_items_t(API_ITEMS_MEMVIEW_TYPE items):
+    # implementation depends on dimension of item
+    return <pyx_items_t>&items[0 ITEMS_EXTRA_DIMS_0]
+
 
 cdef bint count_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
-        const item_data_t item,
+        const item_t item,
         void* udata
     ) noexcept:
 
@@ -61,46 +81,57 @@ cdef bint count_iterator(
     return True
 
 
+cdef struct search_results:
+    size_t size
+    pyx_items_t items
+
+
+cdef init_search_results_from_memview(search_results* r, API_ITEMS_MEMVIEW_TYPE items):
+    r.size = 0
+    r.items = memview_to_pyx_items_t(items)
+
+
 cdef bint search_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
-        const item_data_t item,
+        const item_t item,
         void* udata
     ) noexcept:
 
     cdef search_results* results = <search_results*>udata
-    results.data[results.size] = item
+    copy_c_to_pyx_item(item, &results.items[results.size])
     results.size += 1
     return True
 
-cdef struct search_results:
+
+cdef struct nearest_results:
     size_t size
-    item_data_t* data
+    size_t max_size
+    pyx_items_t items
+    coord_t *distances
+
+
+cdef init_nearest_results_from_memview(nearest_results* r,
+                                       API_ITEMS_MEMVIEW_TYPE items,
+                                       coord_t[::1] distances):
+    r.size = 0
+    r.max_size = len(items)
+    r.items = memview_to_pyx_items_t(items)
+    r.distances = &distances[0] if distances is not None else NULL
+
 
 cdef bint nearest_iterator(
-        const item_data_t item,
+        const item_t item,
         coord_t distance,
         void* udata
     ) noexcept:
 
     cdef nearest_results* results = <nearest_results*>udata
-    results.data[results.size] = item
+    copy_c_to_pyx_item(item, &results.items[results.size])
+    if results.distances != NULL:
+        results.distances[results.size] = distance
     results.size += 1
     return results.size < results.max_size
-
-cdef struct nearest_results:
-    size_t size
-    size_t max_size
-    item_data_t* data
-
-# wrap a contiguous numpy buffer, this way we can pass it to a plain C function
-cdef init_search_results_from_numpy(search_results* r, item_data_t[::1] data):
-    r.size = 0
-    r.data = &data[0]
-cdef init_nearest_results_from_numpy(nearest_results* r, item_data_t[::1] data):
-    r.size = 0
-    r.max_size = len(data)
-    r.data = &data[0]
 
 
 cdef class RTree:
@@ -113,22 +144,27 @@ cdef class RTree:
     def __dealloc__(self):
         rtree_free(self._rtree)
 
-    def insert_point(self, id, coord_t[::1] point):
+    def insert_point_items(self, API_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] points):
 
-        rtree_insert(
-            self._rtree,
-            &point[0],
-            NULL,
-            <item_data_t>id)
+        cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
 
-    def insert_points(self, unsigned long[::1] ids, coord_t[:, ::1] points):
-
-        for i in range(points.shape[0]):
+        for i in range(len(items)):
             rtree_insert(
                 self._rtree,
                 &points[i, 0],
                 NULL,
-                <item_data_t>ids[i])
+                convert_pyx_to_c_item(&pyx_items[i], &points[i, 0], NULL))
+
+    def insert_bb_items(self, API_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
+
+        cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
+
+        for i in range(len(items)):
+            rtree_insert(
+                self._rtree,
+                &bb_mins[i, 0],
+                &bb_maxs[i, 0],
+                convert_pyx_to_c_item(&pyx_items[i], &bb_mins[i, 0], &bb_maxs[i, 0]))
 
     def count(self, coord_t[::1] bb_min, coord_t[::1] bb_max):
 
@@ -147,10 +183,10 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        data_array = np.zeros((num_results,), dtype="NODE_DTYPE")
+        items = np.zeros((num_results, ITEM_LENGTH), dtype="NP_ITEM_DTYPE")
         if num_results == 0:
-            return data_array
-        init_search_results_from_numpy(&results, data_array)
+            return items
+        init_search_results_from_memview(&results, items)
 
         rtree_search(
             self._rtree,
@@ -159,16 +195,20 @@ cdef class RTree:
             &search_iterator,
             &results)
 
-        return data_array
+        return items
 
-    def nearest(self, coord_t[::1] point, size_t k):
+    def nearest(self, coord_t[::1] point, size_t k, return_distances=False):
 
         cdef nearest_results results
 
-        data_array = np.zeros((k,), dtype="NODE_DTYPE")
+        items = np.zeros((k, ITEM_LENGTH), dtype="NP_ITEM_DTYPE")
+        if return_distances:
+            distances = np.zeros((k,), dtype="NP_COORD_DTYPE")
+        else:
+            distances = None
         if k == 0:
-            return data_array
-        init_nearest_results_from_numpy(&results, data_array)
+            return items
+        init_nearest_results_from_memview(&results, items, distances)
 
         all_good = rtree_nearest(
             self._rtree,
@@ -179,22 +219,31 @@ cdef class RTree:
         if not all_good:
             raise RuntimeError("RTree nearest neighbor search ran out of memory.")
 
-        return data_array[:results.size]
+        if return_distances:
+            return items[:results.size], distances[:results.size]
+        else:
+            return items[:results.size]
 
-    def delete(
+    def delete_items(
             self,
             coord_t[::1] bb_min,
             coord_t[::1] bb_max,
-            item_data_t item):
+            API_ITEMS_MEMVIEW_TYPE items):
 
         cdef coord_t* bb_min_p = &bb_min[0]
         cdef coord_t* bb_max_p = &bb_max[0] if bb_max is not None else NULL
 
-        return rtree_delete(
-            self._rtree,
-            bb_min_p,
-            bb_max_p,
-            item)
+        cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
+
+        for i in range(len(items)):
+            if not rtree_delete(
+                    self._rtree,
+                    bb_min_p,
+                    bb_max_p,
+                    convert_pyx_to_c_item(&pyx_items[i], &bb_min[0], &bb_max[0])):
+                return False
+
+        return True
 
     def __len__(self):
 
