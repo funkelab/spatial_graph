@@ -10,20 +10,86 @@ cdef extern from *:
     #define false 0
     #define true 1
 
-    C_MACROS
-    #define DIMS NUM_DIMS
+    %if $c_distance_function
+    #define KNN_USE_EXACT_DISTANCE
+    %end if
+    #define DIMS $dims
 
-    C_DECLARATIONS
+    typedef $coord_dtype.to_pyxtype() coord_t;
+    typedef $item_dtype.base_c_type item_base_t;
+    %if $item_dtype.is_array
+    typedef item_base_t pyx_item_t[$item_dtype.size];
+    %else
+    typedef item_base_t pyx_item_t;
+    %end if
     typedef pyx_item_t* pyx_items_t;
+
+    %if $c_item_t_declaration
+    $c_item_t_declaration
+    %else
+    %if $item_dtype.is_array
+    typedef struct item_t {
+        item_base_t data[$item_dtype.size];
+    } item_t;
+    %else
+    typedef item_base_t item_t;
+    %end if
+    %end if
 
     #include "src/rtree.h"
     #include "src/rtree.c"
 
-    C_FUNCTION_IMPLEMENTATIONS
-    """
+    %if $c_converter_functions
+    $c_converter_functions
+    %else
+    %if $item_dtype.is_array
+    inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
+        item_t c_item;
+        memcpy(&c_item, *pyx_item, sizeof(item_t));
+        return c_item;
+    }
+    inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
+        memcpy(pyx_item, &c_item, sizeof(item_t));
+    }
+    %else
+    // default PYX<->C converters, just casting
+    inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
+        return (item_t)*pyx_item;
+    }
+    inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
+        memcpy(pyx_item, &c_item, sizeof(item_t));
+    }
+    %end if
+    %end if
 
-    PYX_DECLARATIONS
+    %if $c_distance_function
+    $c_distance_function
+    %end if
+    """
+    cdef enum:
+        DIMS = $dims
+    ctypedef $coord_dtype.to_pyxtype() coord_t
+    ctypedef $item_dtype.base_c_type item_base_t
+    %if $item_dtype.is_array
+    ctypedef item_base_t pyx_item_t[$item_dtype.size]
+    %else
+    ctypedef item_base_t pyx_item_t
+    %end if
     ctypedef pyx_item_t* pyx_items_t
+
+    %if $pyx_item_t_declaration
+    $pyx_item_t_declaration
+    %else
+    %if $item_dtype.is_array
+    # item_t can't be an array in rtree, arrays can't be assigned to (and this
+    # is needed inside rtree). So we make item_t a struct with field `data` to
+    # hold the array.
+    cdef struct item_t:
+        item_base_t data[$item_dtype.size]
+    %else
+    ctypedef item_base_t item_t
+    %end if
+    %end if
 
     # PYX <-> C converters
     cdef item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t* max)
@@ -64,9 +130,13 @@ cdef extern from *:
     cdef size_t rtree_count(const rtree *tr)
 
 
-cdef pyx_items_t memview_to_pyx_items_t(API_ITEMS_MEMVIEW_TYPE items):
+cdef pyx_items_t memview_to_pyx_items_t($item_dtype.to_pyxtype(add_dim=True) items):
     # implementation depends on dimension of item
-    return <pyx_items_t>&items[0 ITEMS_EXTRA_DIMS_0]
+    %if $item_dtype.is_array
+    return <pyx_items_t>&items[0, 0]
+    %else
+    return <pyx_items_t>&items[0]
+    %end if
 
 
 cdef bint count_iterator(
@@ -86,7 +156,7 @@ cdef struct search_results:
     pyx_items_t items
 
 
-cdef init_search_results_from_memview(search_results* r, API_ITEMS_MEMVIEW_TYPE items):
+cdef init_search_results_from_memview(search_results* r, $item_dtype.to_pyxtype(add_dim=True) items):
     r.size = 0
     r.items = memview_to_pyx_items_t(items)
 
@@ -112,7 +182,7 @@ cdef struct nearest_results:
 
 
 cdef init_nearest_results_from_memview(nearest_results* r,
-                                       API_ITEMS_MEMVIEW_TYPE items,
+                                       $item_dtype.to_pyxtype(add_dim=True) items,
                                        coord_t[::1] distances):
     r.size = 0
     r.max_size = len(items)
@@ -144,7 +214,11 @@ cdef class RTree:
     def __dealloc__(self):
         rtree_free(self._rtree)
 
-    def insert_point_items(self, API_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] points):
+    def insert_point_items(
+            self,
+            $item_dtype.to_pyxtype(add_dim=True) items,
+            coord_t[:, ::1] points
+    ):
 
         cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
 
@@ -155,7 +229,12 @@ cdef class RTree:
                 NULL,
                 convert_pyx_to_c_item(&pyx_items[i], &points[i, 0], NULL))
 
-    def insert_bb_items(self, API_ITEMS_MEMVIEW_TYPE items, coord_t[:, ::1] bb_mins, coord_t[:, ::1] bb_maxs):
+    def insert_bb_items(
+            self,
+            $item_dtype.to_pyxtype(add_dim=True) items,
+            coord_t[:, ::1] bb_mins,
+            coord_t[:, ::1] bb_maxs
+    ):
 
         cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
 
@@ -183,7 +262,7 @@ cdef class RTree:
         cdef search_results results
         cdef size_t num_results = self.count(bb_min, bb_max)
 
-        items = np.zeros((num_results, ITEM_LENGTH), dtype="NP_ITEM_DTYPE")
+        items = np.zeros((num_results, $item_dtype.size), dtype="$item_dtype.base")
         if num_results == 0:
             return items
         init_search_results_from_memview(&results, items)
@@ -201,9 +280,9 @@ cdef class RTree:
 
         cdef nearest_results results
 
-        items = np.zeros((k, ITEM_LENGTH), dtype="NP_ITEM_DTYPE")
+        items = np.zeros((k, $item_dtype.size), dtype="$item_dtype.base")
         if return_distances:
-            distances = np.zeros((k,), dtype="NP_COORD_DTYPE")
+            distances = np.zeros((k,), dtype="$coord_dtype.base")
         else:
             distances = None
         if k == 0:
@@ -228,7 +307,7 @@ cdef class RTree:
             self,
             coord_t[::1] bb_min,
             coord_t[::1] bb_max,
-            API_ITEMS_MEMVIEW_TYPE items):
+            $item_dtype.to_pyxtype(add_dim=True) items):
 
         cdef coord_t* bb_min_p = &bb_min[0]
         cdef coord_t* bb_max_p = &bb_max[0] if bb_max is not None else NULL

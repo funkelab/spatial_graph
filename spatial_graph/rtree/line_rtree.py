@@ -7,14 +7,14 @@ class LineRTree(RTree):
     cdef struct item_t:
         item_base_t u
         item_base_t v
-        bool corner_mask[NUM_DIMS]
+        bool corner_mask[DIMS]
 """
 
     c_item_t_declaration = f"""
 typedef struct item_t {{
     item_base_t u;
     item_base_t v;
-    bool corner_mask[NUM_DIMS];
+    bool corner_mask[DIMS];
 }} item_t;
 """
 
@@ -24,7 +24,7 @@ inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *start, coord_
     coord_t tmp;
     item.u = (*pyx_item)[0];
     item.v = (*pyx_item)[1];
-    for (int d = 0; d < NUM_DIMS; d++) {
+    for (int d = 0; d < DIMS; d++) {
         item.corner_mask[d] = (start[d] < end[d]);
         if (!item.corner_mask[d]) {
             // swap coordinates to create bounding box
