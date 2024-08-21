@@ -20,10 +20,53 @@ edge_attr_dtypes = [
 @pytest.mark.parametrize("edge_attr_dtypes", edge_attr_dtypes)
 @pytest.mark.parametrize("directed", [True, False])
 def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed):
-    # TODO (directed graphs not yet wrapped)
-    if directed:
-        return
     graph = sg.Graph(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
+
+
+@pytest.mark.parametrize("directed", [True, False])
+def test_operations(directed):
+    graph = sg.Graph(
+        "uint64", {"score": "float"}, {"score": "float"}, directed=directed
+    )
+
+    nodes = [1, 2, 3, 4, 5]
+    graph.add_nodes(
+        np.array(nodes, dtype="uint64"),
+        score=np.array([0.1, 0.2, 0.3, 0.4, 0.5], dtype="float32"),
+    )
+    for u in nodes:
+        for v in nodes:
+            if v == u:
+                continue
+            graph.add_edge(np.array([u, v], dtype="uint64"), score=u * 100 + v)
+
+    if directed:
+        assert graph.num_edges() == len(nodes) ** 2 - len(nodes)
+
+        for node in nodes:
+            in_neighbors = graph.count_in_neighbors(np.array([node], dtype="uint64"))
+            out_neighbors = graph.count_in_neighbors(np.array([node], dtype="uint64"))
+            assert len(in_neighbors) == 1
+            assert len(out_neighbors) == 1
+            assert in_neighbors[0] == len(nodes) - 1
+            assert out_neighbors[0] == len(nodes) - 1
+
+        for edge, attrs in graph.out_edges(data=True):
+            assert attrs.score == edge[0] * 100 + edge[1]
+
+        for edge, attrs in graph.in_edges(data=True):
+            assert attrs.score == edge[1] * 100 + edge[0]
+
+    else:
+        assert graph.num_edges() == (len(nodes) ** 2 - len(nodes)) / 2
+
+        for node in nodes:
+            neighbors = graph.count_neighbors(np.array([node], dtype="uint64"))
+            assert len(neighbors) == 1
+            assert neighbors[0] == len(nodes) - 1
+
+        for edge, attrs in graph.edges(data=True):
+            assert attrs.score == edge[0] * 100 + edge[1]
 
 
 def test_attribute_modification():

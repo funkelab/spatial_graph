@@ -34,6 +34,7 @@ class Graph:
         wrapper_template.node_dtype = node_dtype
         wrapper_template.node_attr_dtypes = node_attr_dtypes
         wrapper_template.edge_attr_dtypes = edge_attr_dtypes
+        wrapper_template.directed = directed
 
         wrapper = witty.compile_module(
             str(wrapper_template),
@@ -42,9 +43,8 @@ class Graph:
             language="c++",
             quiet=True,
         )
-        Graph = wrapper.DirectedGraph if directed else wrapper.UndirectedGraph
-        GraphType = type(cls.__name__, (cls, Graph), {})
-        return Graph.__new__(GraphType)
+        GraphType = type(cls.__name__, (cls, wrapper.Graph), {})
+        return wrapper.Graph.__new__(GraphType)
 
     def __init__(self, node_dtype, node_attr_dtypes, edge_attr_dtypes, directed=False):
         super().__init__()
