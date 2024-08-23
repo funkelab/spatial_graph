@@ -206,8 +206,8 @@ cdef class Graph:
                 ${sep}_p_${name}%slurp
                 %else
                 ${sep}${name}%slurp
-                %set sep=", "
                 %end if
+                %set sep=", "
                 %end for
 
             )
