@@ -23,12 +23,8 @@ def test_delete():
     for i in range(100):
         rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
-    # for i in range(10):
-    # assert rtree.delete(np.array([-100.0, -100.0]), np.array([100.0, 100.0]), i)
     for i in range(10):
-        assert rtree.delete(
-            np.array([i, i], dtype="float64"), np.array([i, i], dtype="float64"), i
-        )
+        rtree.delete_item(i, np.array([i, i], dtype="float64"))
 
     assert rtree.count(np.array([-100.0, -100.0]), np.array([100.0, 100.0])) == 90
     points = rtree.search(np.array([-100.0, -100.0]), np.array([100.0, 100.0]))
@@ -211,3 +207,56 @@ def test_line_rtree_nearest():
         np.array([1.0, 0.0]), k=1, return_distances=True
     )
     np.testing.assert_almost_equal(distances[0], 0.5)
+
+def test_line_rtree_delete():
+
+    line_rtree = LineRTree("uint64[2]", "double", 2)
+
+    line_rtree.insert_lines(
+        np.array(
+            [
+                [0, 1],
+                [2, 3],
+            ],
+            dtype="uint64",
+        ),
+        np.array(
+            [
+                [0.0, 0.0],
+                [0.0, 100.0],
+            ],
+            dtype="double",
+        ),
+        np.array(
+            [
+                [1.0, 1.0],
+                [100.0, 0.0],
+            ],
+            dtype="double",
+        ),
+    )
+
+    # single item delete
+    line_rtree.delete_item([0, 1], np.array([0.0, 0.0]), np.array([1.0, 1.0]))
+
+    lines = line_rtree.nearest(np.array([0.5, 0.5]), k=1)
+    assert len(lines) == 1
+    assert lines[0, 0] == 2
+    assert lines[0, 1] == 3
+
+    line_rtree = LineRTree("uint64[2]", "double", 2)
+
+    np.random.seed(42)
+    ids = np.random.randint(0, 1e10, size=(10_000, 2)).astype("uint64")
+    starts = np.random.random((10_000, 2)).astype("double")
+    ends = np.random.random((10_000, 2)).astype("double")
+
+    line_rtree.insert_lines(ids, starts, ends)
+    print(f"Line 100: {ids[100]}, {starts[100]}, {ends[100]}")
+
+    assert line_rtree.count(np.array([0.0, 0.0]), np.array([1.0, 1.0])) == 10_000
+
+    deleted = line_rtree.delete_items(ids[:1000], starts[:1000], ends[:1000])
+    assert deleted == 1000
+
+    assert line_rtree.count(np.array([0.0, 0.0]), np.array([1.0, 1.0])) == 9_000
