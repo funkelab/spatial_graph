@@ -56,6 +56,9 @@ class RTree:
     # overwrite in subclasses for custom converters
     c_converter_functions = None
 
+    # overwrite in subclasses for custom item comparison code
+    c_equal_function = None
+
     # overwrite in subclasses for custom distance computation
     c_distance_function = None
 
@@ -86,6 +89,7 @@ class RTree:
         wrapper_template.pyx_item_t_declaration = cls.pyx_item_t_declaration
         wrapper_template.c_item_t_declaration = cls.c_item_t_declaration
         wrapper_template.c_converter_functions = cls.c_converter_functions
+        wrapper_template.c_equal_function = cls.c_equal_function
 
         wrapper = witty.compile_module(
             str(wrapper_template),
@@ -111,6 +115,8 @@ class RTree:
         positions = position[np.newaxis]
         return self.insert_point_items(items, positions)
 
-    def delete(self, bb_min, bb_max, item):
+    def delete_item(self, item, bb_min, bb_max=None):
         items = np.array([item], dtype=self.item_dtype.base)
-        return self.delete_items(bb_min, bb_max, items)
+        bb_mins = bb_min[np.newaxis, :]
+        bb_maxs = None if bb_max is None else bb_max[np.newaxis, :]
+        return self.delete_items(items, bb_mins, bb_maxs)

@@ -36,6 +36,18 @@ cdef extern from *:
     %end if
     %end if
 
+    %if $c_equal_function
+    $c_equal_function
+    %else
+    inline bool equal(const item_t a, const item_t b) {
+    %if $item_dtype.is_array
+        return memcmp(&a, &b, sizeof(item_t));
+    %else
+        return a == b;
+    %end if
+    }
+    %end if
+
     #include "src/rtree.h"
     #include "src/rtree.c"
 
@@ -122,7 +134,7 @@ cdef extern from *:
             coord_t distance,
             void *udata),
         void *udata)
-    cdef bool rtree_delete(
+    cdef int rtree_delete(
         rtree *tr,
         const coord_t *min,
         const coord_t *max,
@@ -305,24 +317,30 @@ cdef class RTree:
 
     def delete_items(
             self,
-            coord_t[::1] bb_min,
-            coord_t[::1] bb_max,
-            $item_dtype.to_pyxtype(add_dim=True) items):
+            $item_dtype.to_pyxtype(add_dim=True) items,
+            coord_t[:, ::1] bb_mins,
+            coord_t[:, ::1] bb_maxs=None
+        ):
 
-        cdef coord_t* bb_min_p = &bb_min[0]
-        cdef coord_t* bb_max_p = &bb_max[0] if bb_max is not None else NULL
+        if bb_maxs is None:
+            bb_maxs = bb_mins
 
         cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
 
+        total_deleted = 0
         for i in range(len(items)):
-            if not rtree_delete(
-                    self._rtree,
-                    bb_min_p,
-                    bb_max_p,
-                    convert_pyx_to_c_item(&pyx_items[i], &bb_min[0], &bb_max[0])):
-                return False
+            num_deleted = rtree_delete(
+                self._rtree,
+                &bb_mins[i, 0],
+                &bb_maxs[i, 0],
+                convert_pyx_to_c_item(&pyx_items[i], &bb_mins[i, 0], &bb_maxs[i, 0]))
+            if num_deleted == -1:
+                raise RuntimeError("RTree delete ran out of memory.")
+            if num_deleted == 0:
+                print(f"Item {pyx_items[i]} not deleted!")
+            total_deleted += num_deleted
 
-        return True
+        return total_deleted
 
     def __len__(self):
 

@@ -856,20 +856,12 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 	*shrunk = false;
 	if (node->kind == LEAF) {
 		for (int i = 0; i < node->count; i++) {
-			// the original code used rect_equals_bin here, but according to the
-			// documentation of rtree_delete, this should check whether the item
-			// is contained in the search area
-			// TODO: ir (item rect) is supposed to be the rect of the item to
-			// delete (despite the docstring in rtree.h), code below depends on
-			// it -- need better fix or original behavior
-			if (!rect_contains(ir, &node->rects[i])) {
-				// not contained under this node, keep going
+			if (!rect_equals_bin(ir, &node->rects[i])) {
+				// different bounding box, keep going
 				continue;
 			}
-			int cmp = compare ?
-				compare(node->items[i], item, udata) :
-				memcmp(&node->items[i], &item, sizeof(item_t));
-			if (cmp != 0) {
+			if (!equal(node->items[i], item)) {
+				// different content, keep going
 				continue;
 			}
 			// Found the target item to delete.
@@ -946,7 +938,7 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 }
 
 // returns false if out of memory
-static bool rtree_delete0(struct rtree *tr, const coord_t *min,
+static int rtree_delete0(struct rtree *tr, const coord_t *min,
 	const coord_t *max, const item_t item,
 	int (*compare)(const item_t a, const item_t b, void *udata),
 	void *udata)
@@ -957,7 +949,7 @@ static bool rtree_delete0(struct rtree *tr, const coord_t *min,
 	memcpy(&rect.max[0], max?max:min, sizeof(coord_t)*DIMS);
 
 	if (!tr->root) {
-		return true;
+		return 0;
 	}
 	bool removed = false;
 	bool shrunk = false;
@@ -965,10 +957,10 @@ static bool rtree_delete0(struct rtree *tr, const coord_t *min,
 	if (!node_delete(tr, &tr->rect, tr->root, &rect, item, 0, &removed, &shrunk,
 		compare, udata))
 	{
-		return false;
+		return -1; // OOM
 	}
 	if (!removed) {
-		return true;
+		return 0;
 	}
 	tr->count--;
 	if (tr->count == 0) {
@@ -988,16 +980,16 @@ static bool rtree_delete0(struct rtree *tr, const coord_t *min,
 			tr->rect = node_rect_calc(tr->root);
 		}
 	}
-	return true;
+	return 1;
 }
 
-bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max,
+int rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max,
 	const item_t item)
 {
 	return rtree_delete0(tr, min, max, item, NULL, NULL);
 }
 
-bool rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
+int rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
 	const coord_t *max, const item_t item,
 	int (*compare)(const item_t a, const item_t b, void *udata),
 	void *udata)

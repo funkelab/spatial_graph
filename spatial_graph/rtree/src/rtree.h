@@ -72,8 +72,8 @@ size_t rtree_count(const struct rtree *tr);
 // rectangle, and perform a binary comparison of its data to the provided
 // data. The first item that is found is deleted.
 //
-// Returns false if the system is out of memory.
-bool rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max, const item_t item);
+// Returns the number of deleted items (0 or 1) or -1 if an OOM error occured.
+int rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max, const item_t item);
 
 // rtree_delete_with_comparator deletes an item from the rtree.
 // This searches the tree for an item that is contained within the provided
