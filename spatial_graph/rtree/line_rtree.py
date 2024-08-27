@@ -41,6 +41,12 @@ inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
 }
 """
 
+    c_equal_function = """
+inline int equal(const item_t a, const item_t b) {
+    return (a.u == b.u && a.v == b.v);
+}
+"""
+
     c_distance_function = """
 inline coord_t length2(const coord_t x[]) {
     coord_t length2 = 0;
