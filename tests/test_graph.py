@@ -10,6 +10,7 @@ node_attr_dtypes = [
     {"position": "int[4]"},
 ]
 edge_attr_dtypes = [
+    {},
     {"score": "float64"},
     {"score": "float64", "color": "uint8"},
 ]

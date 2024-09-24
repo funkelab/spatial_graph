@@ -91,6 +91,7 @@ cdef extern from *:
     class $class_name {
         public:
             ${class_name}() {};
+            %if $dtypes
             ${class_name}(
                 %set $sep=""
                 %for name, dtype in $dtypes.items()
@@ -115,6 +116,7 @@ cdef extern from *:
             %set $sep=", "
             %end for
             {};
+            %end if
 
             %for name, dtype in $dtypes.items()
             $dtype.to_c_decl($name);
