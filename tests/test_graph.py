@@ -34,11 +34,16 @@ def test_operations(directed):
         np.array(nodes, dtype="uint64"),
         score=np.array([0.1, 0.2, 0.3, 0.4, 0.5], dtype="float32"),
     )
+    num_added = 0
     for u in nodes:
         for v in nodes:
             if v == u:
                 continue
-            graph.add_edge(np.array([u, v], dtype="uint64"), score=u * 100 + v)
+            if not directed and u > v:
+                continue
+            num_added += graph.add_edge(np.array([u, v], dtype="uint64"), score=u * 100 + v)
+
+    assert graph.num_edges() == num_added
 
     if directed:
         assert graph.num_edges() == len(nodes) ** 2 - len(nodes)

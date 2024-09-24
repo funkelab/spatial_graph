@@ -193,7 +193,7 @@ cdef class Graph:
         %end if
         %end for
 
-        self._graph.add_${kind}_with_prop(
+        return self._graph.add_${kind}_with_prop(
             %if kind == "node"
             node,
             %else
@@ -233,13 +233,14 @@ cdef class Graph:
         %end if
         %end for
 
+        cdef size_t num_added = 0
         for i in range(len(${kind}s)):
             %for name, dtype in $dtypes.items()
             %if $dtype.is_array
             _p_${name} = &${name}[i, 0]
             %end if
             %end for
-            self._graph.add_${kind}_with_prop(
+            num_added += self._graph.add_${kind}_with_prop(
                 %if kind == "node"
                 nodes[i],
                 %else
@@ -258,6 +259,9 @@ cdef class Graph:
 
                 )
             )
+
+        return num_added
+
     %end for
 
     def nodes(self, bint data=False):
