@@ -36,4 +36,4 @@ def test_roi_query():
     )
 
     assert list(sorted(nodes)) == [1, 2]
-    np.testing.assert_array_equal(edges, [[1, 2], [1, 5]])
+    np.testing.assert_array_equal(edges, [[1, 2], [1, 5], [2, 1]])
