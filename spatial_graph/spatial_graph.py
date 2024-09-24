@@ -74,6 +74,21 @@ class SpatialGraph(Graph):
     def query_nearest_edges(self, point, k, return_distances=False):
         return self._edge_rtree.nearest(point, k, return_distances)
 
+    def remove_nodes(self, nodes):
+        positions = getattr(self.node_attrs[nodes], self.position_attr)
+        self._node_rtree.delete_items(nodes, positions)
+        if not self.directed:
+            edges = self.edges_by_nodes(nodes)
+        else:
+            edges = np.concatenate(
+                self.in_edges_by_nodes(nodes),
+                self.out_edges_by_nodes(nodes)
+            )
+        positions_u = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
+        positions_v = getattr(self.node_attrs[edges[:, 1]], self.position_attr)
+        self._edge_rtree.delete_items(edges, positions_u, positions_v)
+        super().remove_nodes(nodes)
+
     def _get_position(self, kwargs):
         if self.position_attr in kwargs:
             return kwargs[self.position_attr]

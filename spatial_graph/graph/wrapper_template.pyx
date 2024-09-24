@@ -540,6 +540,10 @@ cdef class Graph:
     def remove_node(self, NodeType node):
         self._graph.remove_nodes(node)
 
+    def remove_nodes(self, NodeType[::1] nodes):
+        for i in range(len(nodes)):
+            self._graph.remove_nodes(nodes[i])
+
     # read-only graph properties
 
     %if $directed

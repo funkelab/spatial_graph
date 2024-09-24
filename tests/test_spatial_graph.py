@@ -37,3 +37,27 @@ def test_roi_query():
 
     assert list(sorted(nodes)) == [1, 2]
     np.testing.assert_array_equal(edges, [[1, 2], [1, 5], [2, 1]])
+
+def test_delete():
+    graph = sg.SpatialGraph(
+        ndims=3,
+        node_dtype="uint64",
+        node_attr_dtypes={"position": "double[3]"},
+        edge_attr_dtypes={"score": "float32"},
+        position_attr="position",
+        directed=False,
+    )
+    nodes = np.arange(0, 100_000).astype("uint64")
+    graph.add_nodes(
+        nodes,
+        position=np.random.random(size=(100_000, 3)).astype("double"),
+    )
+    edges = np.random.randint(0, 100_000, size=(10_000, 2)).astype("uint64")
+    graph.add_edges(
+        edges,
+        score=np.random.random(size=(10_000,)).astype("float32"),
+    )
+
+    graph.remove_nodes(nodes[:1000])
+
+    assert len(graph) == 99_000
