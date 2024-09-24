@@ -61,7 +61,7 @@ def test_operations(directed):
             assert attrs.score == edge[0] * 100 + edge[1]
 
         for edge, attrs in graph.in_edges(data=True):
-            assert attrs.score == edge[1] * 100 + edge[0]
+            assert attrs.score == edge[0] * 100 + edge[1]
 
     else:
         assert graph.num_edges() == (len(nodes) ** 2 - len(nodes)) / 2
@@ -74,6 +74,36 @@ def test_operations(directed):
         for edge, attrs in graph.edges(data=True):
             assert attrs.score == edge[0] * 100 + edge[1]
 
+
+def test_directed_edges():
+
+    graph = sg.Graph("uint64", directed=True)
+    graph.add_nodes(np.array([0, 1, 2], dtype="uint64"))
+    graph.add_edges(np.array([[0, 1], [1, 2], [2, 0]], dtype="uint64"))
+
+    # all in edges
+    in_edges = sorted(list(graph.in_edges()))
+    assert len(in_edges) == 3
+    np.testing.assert_array_equal(in_edges, [[0, 1], [1, 2], [2, 0]])
+
+    # all out edges
+    out_edges = sorted(list(graph.out_edges()))
+    assert len(out_edges) == 3
+    np.testing.assert_array_equal(out_edges, [[0, 1], [1, 2], [2, 0]])
+
+    # in/out edges per node
+    in_edges_0 = list(graph.in_edges(0))
+    assert len(in_edges_0) == 1
+    np.testing.assert_array_equal(in_edges_0, [[2, 0]])
+    out_edges_0 = list(graph.out_edges(0))
+    assert len(out_edges_0) == 1
+    np.testing.assert_array_equal(out_edges_0, [[0, 1]])
+
+    # in/out edges for list of nodes
+    in_edges_01 = graph.in_edges_by_nodes(np.array([0, 1], dtype="uint64"))
+    np.testing.assert_array_equal(in_edges_01, [[2, 0], [0, 1]])
+    out_edges_01 = graph.out_edges_by_nodes(np.array([0, 1], dtype="uint64"))
+    np.testing.assert_array_equal(out_edges_01, [[0, 1], [1, 2]])
 
 def test_attribute_modification():
     graph = sg.Graph(

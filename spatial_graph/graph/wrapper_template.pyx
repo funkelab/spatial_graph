@@ -291,7 +291,19 @@ cdef class Graph:
     def ${prefix}edges(self, node=None, bint data=False):
 
         if node is not None:
-            yield from self._${prefix}neighbors(<NodeType>node, data)
+            for neighbor in self._${prefix}neighbors(<NodeType>node, data):
+                if data:
+                    %if $prefix == "in_"
+                    yield (neighbor[0], node), data
+                    %else
+                    yield (node, neighbor[0]), data
+                    %end if
+                else:
+                    %if $prefix == "in_"
+                    yield (neighbor, node)
+                    %else
+                    yield (node, neighbor)
+                    %end if
             return
 
         cdef NodeIterator node_it = self._graph.begin()
@@ -314,11 +326,16 @@ cdef class Graph:
                     inc(it)
                     continue
                 %end if
+                %if $prefix == "in_"
+                edge = (v, u)
+                %else
+                edge = (u, v)
+                %end if
                 if data:
                     edge_data.set_ptr(&deref(it).second.prop())
-                    yield (u, v), edge_data
+                    yield edge, edge_data
                 else:
-                    yield (u, v)
+                    yield edge
                 inc(it)
             inc(node_it)
 
@@ -340,8 +357,13 @@ cdef class Graph:
             end = view.second
             while it != end:
                 v = deref(it).first
+                %if $prefix == "in_"
+                edges[i, 0] = v
+                edges[i, 1] = u
+                %else
                 edges[i, 0] = u
                 edges[i, 1] = v
+                %end if
                 i += 1
                 inc(it)
 
