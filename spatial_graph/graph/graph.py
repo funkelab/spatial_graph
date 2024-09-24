@@ -9,12 +9,14 @@ class Graph:
     def __new__(
         cls,
         node_dtype,
-        node_attr_dtypes,
+        node_attr_dtypes=None,
         edge_attr_dtypes=None,
         directed=False,
         *args,
         **kwargs,
     ):
+        if node_attr_dtypes is None:
+            node_attr_dtypes = {}
         if edge_attr_dtypes is None:
             edge_attr_dtypes = {}
 
@@ -46,7 +48,11 @@ class Graph:
         GraphType = type(cls.__name__, (cls, wrapper.Graph), {})
         return wrapper.Graph.__new__(GraphType)
 
-    def __init__(self, node_dtype, node_attr_dtypes, edge_attr_dtypes, directed=False):
+    def __init__(self, node_dtype, node_attr_dtypes=None, edge_attr_dtypes=None, directed=False):
+        if node_attr_dtypes is None:
+            node_attr_dtypes = {}
+        if edge_attr_dtypes is None:
+            edge_attr_dtypes = {}
         super().__init__()
         self.node_dtype = node_dtype
         self.node_attr_dtypes = node_attr_dtypes
