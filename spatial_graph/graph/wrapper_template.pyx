@@ -49,9 +49,9 @@ cdef extern from *:
 
         int add_edge_with_prop(NodeType& source, NodeType& target, EdgeData& prop)
 
-        NodeData& node_prop[T](T& node)
+        NodeData& node_prop[T](T& node) except +
 
-        EdgeData& edge_prop[T](T& u, T& v)
+        EdgeData& edge_prop[T](T& u, T& v) except +
 
         %if $directed
         pair[NeighborsIterator, NeighborsIterator] out_neighbors(Iterator& node)

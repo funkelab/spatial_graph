@@ -42,7 +42,9 @@ def test_operations(directed):
                 continue
             if not directed and u > v:
                 continue
-            num_added += graph.add_edge(np.array([u, v], dtype="uint64"), score=u * 100 + v)
+            num_added += graph.add_edge(
+                np.array([u, v], dtype="uint64"), score=u * 100 + v
+            )
 
     assert graph.num_edges() == num_added
 
@@ -76,7 +78,6 @@ def test_operations(directed):
 
 
 def test_directed_edges():
-
     graph = sg.Graph("uint64", directed=True)
     graph.add_nodes(np.array([0, 1, 2], dtype="uint64"))
     graph.add_edges(np.array([[0, 1], [1, 2], [2, 0]], dtype="uint64"))
@@ -104,6 +105,7 @@ def test_directed_edges():
     np.testing.assert_array_equal(in_edges_01, [[2, 0], [0, 1]])
     out_edges_01 = graph.out_edges_by_nodes(np.array([0, 1], dtype="uint64"))
     np.testing.assert_array_equal(out_edges_01, [[0, 1], [1, 2]])
+
 
 def test_attribute_modification():
     graph = sg.Graph(
@@ -154,3 +156,38 @@ def test_attribute_modification():
     assert graph.node_attrs[2].attr2 == 40
     assert graph.node_attrs[3].attr2 == 60
     assert graph.node_attrs[4].attr2 == 80
+
+
+def test_missing_nodes_edges():
+    graph = sg.Graph(
+        "uint64", {"node_attr": "float32"}, {"edge_attr": "float32"}, directed=False
+    )
+    graph.add_nodes(
+        np.array([1, 2, 3, 4, 5], dtype="uint64"),
+        node_attr=np.array([0.1, 0.2, 0.3, 0.4, 0.5], dtype="float32"),
+    )
+    graph.add_edges(
+        np.array([[1, 2], [3, 4], [5, 1]], dtype="uint64"),
+        edge_attr=np.array([0.1, 0.2, 0.3], dtype="float32"),
+    )
+
+    with pytest.raises(IndexError):
+        graph.node_attrs[6].node_attr
+
+    with pytest.raises(IndexError):
+        graph.node_attrs[[4, 5, 6]].node_attr
+
+    with pytest.raises(IndexError):
+        graph.edge_attrs[(1, 3)].edge_attr
+
+    with pytest.raises(IndexError):
+        graph.edge_attrs[[(1, 2), (2, 4), (5, 1)]].edge_attr
+
+
+def test_missing_attribute():
+    graph = sg.Graph("uint64", directed=False)
+    graph.add_nodes(np.array([1, 2, 3, 4, 5], dtype="uint64"))
+    graph.add_edges(np.array([[1, 2], [3, 4], [5, 1]], dtype="uint64"))
+
+    with pytest.raises(AttributeError):
+        graph.node_attrs[5].doesntexist

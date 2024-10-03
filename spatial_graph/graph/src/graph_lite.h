@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <cassert>
 #include <iostream>
+#include <sstream>
 
 // container spec
 namespace graph_lite {
@@ -411,6 +412,16 @@ namespace graph_lite::detail {
         const NodePropType& node_prop(const T& node_iv) const {
             const auto* self = static_cast<const GType*>(this);
             auto pos = self->find_by_iter_or_by_value(node_iv);
+			if (pos == self->adj_list.end()) {
+				if constexpr(GType::template is_iterator<T>()) {
+					throw std::out_of_range("Requested node does not exist");
+				} else {
+					static_assert(GType::template can_construct_node<T>);
+					std::ostringstream msg_stream;
+					msg_stream << "Node " << typename GType::node_type{node_iv} << " does not exist";
+					throw std::out_of_range(msg_stream.str());
+				}
+			}
             return pos->second.prop;
         }
         template<typename T>
@@ -468,8 +479,6 @@ namespace graph_lite::detail {
         template<typename U, typename V>
         const EdgePropType& edge_prop(U&& source_iv, V&& target_iv) const {
             const auto* self = static_cast<const GType*>(this);
-            const char* src_not_found_msg = "source is not found";
-            const char* tgt_not_found_msg = "target is not found";
             auto find_neighbor_iv = [self, &source_iv, &target_iv]() {
                 auto&& tgt_val = self->unwrap_by_iter_or_by_value(std::forward<V>(target_iv));
                 if constexpr(GType::DIRECTION==EdgeDirection::UNDIRECTED) {
@@ -490,14 +499,18 @@ namespace graph_lite::detail {
             if constexpr(GType::template is_iterator<U>()) {  // I & V or I & I
                 auto [found, pos] = find_neighbor_iv();
                 if (not found) {
-                    throw std::runtime_error(tgt_not_found_msg);
+					std::ostringstream msg_stream;
+					msg_stream << "Edge (" << typename GType::node_type{source_iv} << ", " << typename GType::node_type{target_iv} << ") does not exist";
+                    throw std::out_of_range(msg_stream.str());
                 }
                 return pos->second.prop();
             } else {
                 // V & I or V & V
                 auto [found, pos] = find_neighbor_vi();
                 if (not found) {
-                    throw std::runtime_error(src_not_found_msg);
+					std::ostringstream msg_stream;
+					msg_stream << "Edge (" << typename GType::node_type{source_iv} << ", " << typename GType::node_type{target_iv} << ") does not exist";
+                    throw std::out_of_range(msg_stream.str());
                 }
                 return pos->second.prop();
             }

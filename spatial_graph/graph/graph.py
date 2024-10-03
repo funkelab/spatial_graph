@@ -40,7 +40,8 @@ class Graph:
 
         wrapper = witty.compile_module(
             str(wrapper_template),
-            extra_compile_args=["-O3", "-std=c++17"],
+            source_files=[str(src_dir / "src" / "graph_lite.h")],
+            extra_compile_args=["-O3", "-std=c++20"],
             include_dirs=[str(src_dir)],
             language="c++",
             quiet=True,
@@ -48,7 +49,9 @@ class Graph:
         GraphType = type(cls.__name__, (cls, wrapper.Graph), {})
         return wrapper.Graph.__new__(GraphType)
 
-    def __init__(self, node_dtype, node_attr_dtypes=None, edge_attr_dtypes=None, directed=False):
+    def __init__(
+        self, node_dtype, node_attr_dtypes=None, edge_attr_dtypes=None, directed=False
+    ):
         if node_attr_dtypes is None:
             node_attr_dtypes = {}
         if edge_attr_dtypes is None:
