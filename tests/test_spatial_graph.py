@@ -31,12 +31,11 @@ def test_roi_query():
         score=np.array([0.2, 0.3, 0.4], dtype="float32"),
     )
 
-    nodes, edges = graph.query_in_roi(
-        np.array([[0.0, 0.0, 0.0], [0.25, 0.25, 0.25]]), edge_inclusion="incident"
-    )
+    nodes = graph.query_nodes_in_roi(np.array([[0.0, 0.0, 0.0], [0.25, 0.25, 0.25]]))
+    edges = graph.query_edges_in_roi(np.array([[0.0, 0.0, 0.0], [0.25, 0.25, 0.25]]))
 
     assert list(sorted(nodes)) == [1, 2]
-    np.testing.assert_array_equal(edges, [[1, 2], [1, 5], [2, 1]])
+    np.testing.assert_array_equal(edges, [[1, 2], [5, 1]])
 
 def test_delete():
     graph = sg.SpatialGraph(

@@ -50,23 +50,11 @@ class SpatialGraph(Graph):
         self._edge_rtree.insert_lines(edges, starts, ends)
         super().add_edges(edges, **kwargs)
 
-    def query_in_roi(self, roi, edge_inclusion=None):
-        nodes = self._node_rtree.search(roi[0], roi[1])
+    def query_nodes_in_roi(self, roi):
+        return self._node_rtree.search(roi[0], roi[1])
 
-        if not edge_inclusion:
-            return nodes
-
-        if edge_inclusion not in SpatialGraph.edge_inclusion_values:
-            raise ValueError("edge_inclusion has to be in {edge_inclusion_values}")
-
-        edges = self.edges_by_nodes(nodes)
-
-        if edge_inclusion == "incident":
-            return nodes, edges
-        elif edge_inclusion == "leaving":
-            return nodes, []  # TODO
-        elif edge_inclusion == "entering":
-            return nodes, []  # TODO
+    def query_edges_in_roi(self, roi):
+        return self._edge_rtree.search(roi[0], roi[1])
 
     def query_nearest_nodes(self, point, k, return_distances=False):
         return self._node_rtree.nearest(point, k, return_distances)
