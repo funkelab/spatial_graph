@@ -37,6 +37,15 @@ def test_roi_query():
     assert list(sorted(nodes)) == [1, 2]
     np.testing.assert_array_equal(edges, [[1, 2], [5, 1]])
 
+    # query in a ROI that does not contain any nodes/edges
+
+    nodes = graph.query_nodes_in_roi(np.array([[1.0, 1.0, 1.0], [1.25, 1.25, 1.25]]))
+    edges = graph.query_edges_in_roi(np.array([[1.0, 1.0, 1.0], [1.25, 1.25, 1.25]]))
+
+    assert len(nodes) == 0
+    assert len(edges) == 0
+
+
 def test_delete():
     graph = sg.SpatialGraph(
         ndims=3,
