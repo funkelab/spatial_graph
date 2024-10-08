@@ -441,7 +441,13 @@ cdef class Graph:
             self,
             NodeType node,
             $dtype.to_pyxtype(use_memory_view=True) $name):
-        self._graph.node_prop(node).${name} = $dtype.to_rvalue(name=$name)
+        %if $dtype.is_array
+        %for j in range($dtype.size)
+        self._graph.node_prop(node).${name}[$j] = ${name}[$j]
+        %end for
+        %else
+        self._graph.node_prop(node).${name} = $name
+        %end if
 
     def set_nodes_data_${name}(
             self,
@@ -453,16 +459,29 @@ cdef class Graph:
         cdef Py_ssize_t i = 0
 
         # all nodes requested
-        %set $rvalue=$dtype.to_rvalue(name=$name, array_index="i")
         if nodes is None:
             while node_it != node_end:
-                self._graph.node_prop(node_it).$name = $rvalue
+                %if $dtype.is_array
+                node_data = &self._graph.node_prop(node_it)
+                %for j in range($dtype.size)
+                node_data.${name}[$j] = ${name}[i, $j]
+                %end for
+                %else
+                self._graph.node_prop(node_it).$name = ${name}[i]
+                %end if
                 inc(node_it)
                 i += 1
         else:
             assert len(nodes) == len($name)
             for i in range(len(nodes)):
-                self._graph.node_prop(nodes[i]).$name = $rvalue
+                %if dtype.is_array
+                node_data = &self._graph.node_prop(nodes[i])
+                %for j in range($dtype.size)
+                node_data.${name}[$j] = ${name}[i, $j]
+                %end for
+                %else
+                self._graph.node_prop(nodes[i]).$name = ${name}[i]
+                %end if
     %end for
 
     %for name, dtype in $edge_attr_dtypes.items()
@@ -541,7 +560,14 @@ cdef class Graph:
             self,
             NodeType u, NodeType v,
             $dtype.to_pyxtype(use_memory_view=True) $name):
-        self._graph.edge_prop(u, v).${name} = $dtype.to_rvalue(name=$name)
+        %if dtype.is_array
+        edge_data = &self._graph.edge_prop(u, v)
+        %for j in range($dtype.size)
+        edge_data.${name}[$j] = ${name}[$j]
+        %end for
+        %else
+        self._graph.edge_prop(u, v).${name} = $name
+        %end if
 
     def set_edges_data_${name}(
             self,
@@ -554,9 +580,15 @@ cdef class Graph:
         assert len(us) == len(vs)
         num_edges = len(us)
 
-        %set $rvalue = $dtype.to_rvalue(name=$name, array_index="i")
         for i in range(num_edges):
-            self._graph.edge_prop(us[i], vs[i]).$name = $rvalue
+            %if $dtype.is_array
+            edge_data = &self._graph.edge_prop(us[i], vs[i])
+            %for j in range($dtype.size)
+            edge_data.${name}[$j] = ${name}[i, $j]
+            %end for
+            %else
+            self._graph.edge_prop(us[i], vs[i]).$name = ${name}[i]
+            %end if
     %end for
 
     # modify graph
