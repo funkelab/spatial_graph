@@ -159,7 +159,10 @@ class EdgeAttrsView:
                     raise RuntimeError(f"Can not handle edges type {type(edges)}")
 
         if isinstance(edges, np.ndarray):
+            if len(edges) == 0:
+                edges = edges.reshape((0, 2))
             assert edges.shape[1] == 2, "Edge arrays should have shape (n, 2)"
+            edges = np.ascontiguousarray(edges.T)
         elif isinstance(edges, tuple):
             # a single edge
             for name in graph.edge_attr_dtypes.keys():

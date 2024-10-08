@@ -183,6 +183,9 @@ def test_missing_nodes_edges():
     with pytest.raises(IndexError):
         graph.edge_attrs[[(1, 2), (2, 4), (5, 1)]].edge_attr
 
+    assert len(graph.node_attrs[[]].node_attr) == 0
+    assert len(graph.edge_attrs[[]].edge_attr) == 0
+
 
 def test_missing_attribute():
     graph = sg.Graph("uint64", directed=False)
