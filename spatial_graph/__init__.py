@@ -1,7 +1,7 @@
 from importlib.metadata import version, PackageNotFoundError
 
 try:
-    __version__ = version('spatial_graph')
+    __version__ = version("spatial_graph")
 except PackageNotFoundError:
     __version__ = "unknown"
 
