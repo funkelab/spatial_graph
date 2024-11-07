@@ -18,7 +18,8 @@ authors = [
 dynamic = ["version"]
 dependencies = [
   "witty @ git+https://github.com/funkelab/witty.git@v0.1",
-  "cheetah3"
+  "cheetah3",
+  "numpy",
 ]
 
 [project.optional-dependencies]
