@@ -84,7 +84,7 @@ class NodeAttrsView:
                 _ = len(nodes)
                 # if so, convert to ndarray
                 nodes = np.array(nodes, dtype=graph.node_dtype)
-            except Exception as e:
+            except Exception:
                 # must be a single node
                 for name in graph.node_attr_dtypes.keys():
                     super().__setattr__(
@@ -152,10 +152,10 @@ class EdgeAttrsView:
                 # edges should be an iteratable
                 try:
                     # does it have a length?
-                    num_edges = len(edges)
+                    len(edges)
                     # case 2 and 3
                     edges = np.array(edges, dtype=graph.node_dtype)
-                except Exception as e:
+                except Exception:
                     raise RuntimeError(f"Can not handle edges type {type(edges)}")
 
         if isinstance(edges, np.ndarray):

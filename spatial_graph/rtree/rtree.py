@@ -1,3 +1,4 @@
+from typing import ClassVar
 import witty
 import numpy as np
 from Cheetah.Template import Template
@@ -50,17 +51,17 @@ class RTree:
     """
 
     # overwrite in subclasses for custom item_t structures
-    pyx_item_t_declaration = None
-    c_item_t_declaration = None
+    pyx_item_t_declaration: ClassVar[str] = ""
+    c_item_t_declaration: ClassVar[str] = ""
 
     # overwrite in subclasses for custom converters
-    c_converter_functions = None
+    c_converter_functions: ClassVar[str] = ""
 
     # overwrite in subclasses for custom item comparison code
-    c_equal_function = None
+    c_equal_function: ClassVar[str] = ""
 
     # overwrite in subclasses for custom distance computation
-    c_distance_function = None
+    c_distance_function: ClassVar[str] = ""
 
     def __new__(
         cls,
@@ -69,8 +70,6 @@ class RTree:
         dims,
     ):
         item_dtype = DType(item_dtype)
-        item_is_array = item_dtype.is_array
-        item_size = item_dtype.size
         coord_dtype = DType(coord_dtype)
 
         ############################################

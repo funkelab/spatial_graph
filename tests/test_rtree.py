@@ -208,8 +208,8 @@ def test_line_rtree_nearest():
     )
     np.testing.assert_almost_equal(distances[0], 0.5)
 
-def test_line_rtree_delete():
 
+def test_line_rtree_delete():
     line_rtree = LineRTree("uint64[2]", "double", 2)
 
     line_rtree.insert_lines(
