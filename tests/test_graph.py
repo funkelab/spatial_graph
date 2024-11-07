@@ -170,7 +170,12 @@ def test_attribute_modification():
     assert graph.node_attrs[4].attr2 == 80
 
     graph.node_attrs[[2, 3, 4]].attr3 += np.array(
-        [[1, 1, 1], [2, 2, 2], [3, 3, 3]], dtype="float32"
+        [
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+        ],
+        dtype="float32",
     )
     np.testing.assert_array_almost_equal(graph.node_attrs[2].attr3, [1.3, 1.6, 1.9])
     np.testing.assert_array_almost_equal(graph.node_attrs[3].attr3, [2.3, 2.6, 2.9])
@@ -178,14 +183,26 @@ def test_attribute_modification():
 
     # modify edge attribute
     np.testing.assert_array_equal(
-        graph.edge_attrs[[[1, 2], [5, 1]]].attr1, [[1, 2, 3, 4], [3, 4, 5, 6]]
+        graph.edge_attrs[[[1, 2], [5, 1]]].attr1,
+        [
+            [1, 2, 3, 4],
+            [3, 4, 5, 6],
+        ],
     )
     graph.edge_attrs[[[1, 2], [5, 1]]].attr1 = np.array(
-        [[11, 22, 33, 44], [30, 40, 50, 60]], dtype="int"
+        [
+            [11, 22, 33, 44],
+            [30, 40, 50, 60],
+        ],
+        dtype="int",
     )
     np.testing.assert_array_equal(
         graph.edge_attrs[[[1, 2], [3, 4], [5, 1]]].attr1,
-        [[11, 22, 33, 44], [2, 3, 4, 5], [30, 40, 50, 60]],
+        [
+            [11, 22, 33, 44],
+            [2, 3, 4, 5],
+            [30, 40, 50, 60],
+        ],
     )
 
 
