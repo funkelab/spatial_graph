@@ -54,7 +54,8 @@ static int rc_fetch_add(rc_t *ptr, int delta) {
 }
 #endif
 
-#define abs(x) ({ __typeof__ (x) _x = (x); _x >= 0 ? _x : -_x; })
+#define abs(x) ((x) >= 0 ? (x) : -(x))
+
 enum kind {
 	LEAF = 1,
 	BRANCH = 2,

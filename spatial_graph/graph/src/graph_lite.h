@@ -469,7 +469,7 @@ namespace graph_lite::detail {
         template<typename U, typename V>
         EdgePropType& edge_prop(U&& source_iv, V&& target_iv) {
             return const_cast<EdgePropType&>(
-                    static_cast<const EdgePropGraphBase*>(this)->template edge_prop(
+                    static_cast<const EdgePropGraphBase*>(this)->template edge_prop<U, V>(
                         std::forward<U>(source_iv),
                         std::forward<V>(target_iv)
                     )

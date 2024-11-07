@@ -1,3 +1,11 @@
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("spatial_graph")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
+
 from .rtree import PointRTree
 from .rtree import LineRTree
 from .graph import Graph

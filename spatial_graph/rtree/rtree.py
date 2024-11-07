@@ -1,4 +1,5 @@
 from typing import ClassVar
+import sys
 import witty
 import numpy as np
 from Cheetah.Template import Template
@@ -97,7 +98,7 @@ class RTree:
                 src_dir / "src" / "rtree.c",
                 src_dir / "src" / "config.h",
             ],
-            extra_compile_args=["-O3"],
+            extra_compile_args=["/O2" if sys.platform == "win32" else "-O3"],
             include_dirs=[str(src_dir)],
             language="c",
             quiet=True,
