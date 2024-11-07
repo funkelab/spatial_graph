@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "spatial_graph"
 description = "A spatial graph datastructure for python."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
   "Programming Language :: Python :: 3",
 ]
@@ -18,13 +18,14 @@ authors = [
 dynamic = ["version"]
 dependencies = [
   "witty @ git+https://github.com/funkelab/witty.git@v0.1",
-  "cheetah3"
+  "cheetah3",
+  "numpy",
 ]
 
 [project.optional-dependencies]
 dev = [
   'pytest',
-  'black',
+  'ruff',
   'mypy',
   'pdoc',
   'pre-commit',
@@ -38,3 +39,7 @@ repository = "https://github.com/funkelab/spatial_graph"
 [tool.setuptools]
 packages = ["spatial_graph"]
 package-data = { "spatial_graph" = ["*.pyi"] }
+
+[tool.ruff]
+target-version = "py39"
+src = ["spatial_graph"]

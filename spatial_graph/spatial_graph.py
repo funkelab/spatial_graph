@@ -69,8 +69,7 @@ class SpatialGraph(Graph):
             edges = self.edges_by_nodes(nodes)
         else:
             edges = np.concatenate(
-                self.in_edges_by_nodes(nodes),
-                self.out_edges_by_nodes(nodes)
+                self.in_edges_by_nodes(nodes), self.out_edges_by_nodes(nodes)
             )
         positions_u = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
         positions_v = getattr(self.node_attrs[edges[:, 1]], self.position_attr)

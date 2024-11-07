@@ -3,19 +3,19 @@ import numpy as np
 
 
 class LineRTree(RTree):
-    pyx_item_t_declaration = f"""
+    pyx_item_t_declaration = """
     cdef struct item_t:
         item_base_t u
         item_base_t v
         bool corner_mask[DIMS]
 """
 
-    c_item_t_declaration = f"""
-typedef struct item_t {{
+    c_item_t_declaration = """
+typedef struct item_t {
     item_base_t u;
     item_base_t v;
     bool corner_mask[DIMS];
-}} item_t;
+} item_t;
 """
 
     c_converter_functions = """

@@ -21,7 +21,7 @@ edge_attr_dtypes = [
 @pytest.mark.parametrize("edge_attr_dtypes", edge_attr_dtypes)
 @pytest.mark.parametrize("directed", [True, False])
 def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed):
-    graph = sg.Graph(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
+    sg.Graph(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
 
 
 @pytest.mark.parametrize("directed", [True, False])
@@ -119,12 +119,16 @@ def test_attribute_modification():
         np.array([1, 2, 3, 4, 5], dtype="uint64"),
         attr1=np.array([0.1, 0.2, 0.3, 0.4, 0.5], dtype="double"),
         attr2=np.array([1, 2, 3, 4, 5], dtype="int"),
-        attr3=np.array([
-            [0.1, 0.2, 0.3],
-            [0.1, 0.2, 0.3],
-            [0.1, 0.2, 0.3],
-            [0.1, 0.2, 0.3],
-            [0.1, 0.2, 0.3]], dtype="float32")
+        attr3=np.array(
+            [
+                [0.1, 0.2, 0.3],
+                [0.1, 0.2, 0.3],
+                [0.1, 0.2, 0.3],
+                [0.1, 0.2, 0.3],
+                [0.1, 0.2, 0.3],
+            ],
+            dtype="float32",
+        ),
     )
 
     graph.add_edges(
@@ -165,10 +169,14 @@ def test_attribute_modification():
     assert graph.node_attrs[3].attr2 == 60
     assert graph.node_attrs[4].attr2 == 80
 
-    graph.node_attrs[[2, 3, 4]].attr3 += np.array([
-        [1, 1, 1],
-        [2, 2, 2],
-        [3, 3, 3]], dtype="float32")
+    graph.node_attrs[[2, 3, 4]].attr3 += np.array(
+        [
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+        ],
+        dtype="float32",
+    )
     np.testing.assert_array_almost_equal(graph.node_attrs[2].attr3, [1.3, 1.6, 1.9])
     np.testing.assert_array_almost_equal(graph.node_attrs[3].attr3, [2.3, 2.6, 2.9])
     np.testing.assert_array_almost_equal(graph.node_attrs[4].attr3, [3.3, 3.6, 3.9])
@@ -178,24 +186,25 @@ def test_attribute_modification():
         graph.edge_attrs[[[1, 2], [5, 1]]].attr1,
         [
             [1, 2, 3, 4],
-            [3, 4, 5, 6]
-        ]
+            [3, 4, 5, 6],
+        ],
     )
     graph.edge_attrs[[[1, 2], [5, 1]]].attr1 = np.array(
         [
             [11, 22, 33, 44],
-            [30, 40, 50, 60]
+            [30, 40, 50, 60],
         ],
-        dtype="int"
+        dtype="int",
     )
     np.testing.assert_array_equal(
         graph.edge_attrs[[[1, 2], [3, 4], [5, 1]]].attr1,
         [
             [11, 22, 33, 44],
             [2, 3, 4, 5],
-            [30, 40, 50, 60]
-        ]
+            [30, 40, 50, 60],
+        ],
     )
+
 
 def test_missing_nodes_edges():
     graph = sg.Graph(
