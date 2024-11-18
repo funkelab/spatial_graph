@@ -247,7 +247,7 @@ def test_line_rtree_delete():
     line_rtree = LineRTree("uint64[2]", "double", 2)
 
     np.random.seed(42)
-    ids = np.random.randint(0, 1e10, size=(10_000, 2)).astype("uint64")
+    ids = np.random.randint(0, 1e10, size=(10_000, 2), dtype="uint64")
     starts = np.random.random((10_000, 2)).astype("double")
     ends = np.random.random((10_000, 2)).astype("double")
 
