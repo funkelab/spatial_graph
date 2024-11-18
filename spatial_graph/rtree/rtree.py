@@ -6,6 +6,8 @@ from Cheetah.Template import Template
 from pathlib import Path
 from ..dtypes import DType
 
+DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
+
 
 class RTree:
     """A generic RTree implementation, compiled on-the-fly during
@@ -102,6 +104,7 @@ class RTree:
             include_dirs=[str(src_dir)],
             language="c",
             quiet=True,
+            define_macros=DEFINE_MACROS,
         )
         RTreeType = type(cls.__name__, (cls, wrapper.RTree), {})
         return wrapper.RTree.__new__(RTreeType)
