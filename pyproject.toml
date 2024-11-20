@@ -17,7 +17,7 @@ authors = [
 ]
 dynamic = ["version"]
 dependencies = [
-  "witty @ git+https://github.com/funkelab/witty.git@v0.1",
+  "witty @ git+https://github.com/funkelab/witty.git@v0.2.0",
   "cheetah3",
   "numpy",
 ]

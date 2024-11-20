@@ -1,8 +1,17 @@
+import sys
 import witty
 from pathlib import Path
 import numpy as np
 from Cheetah.Template import Template
 from ..dtypes import DType
+
+# Set platform-specific compile arguments
+if sys.platform == "win32":
+    # Use /O2 for optimization and /std:c++20 for C++20
+    EXTRA_COMPILE_ARGS = ["/O2", "/std:c++20"]
+else:
+    # -O3 for optimization and -std=c++20 for C++20
+    EXTRA_COMPILE_ARGS = ["-O3", "-std=c++20"]
 
 
 class Graph:
@@ -41,7 +50,7 @@ class Graph:
         wrapper = witty.compile_module(
             str(wrapper_template),
             source_files=[str(src_dir / "src" / "graph_lite.h")],
-            extra_compile_args=["-O3", "-std=c++20"],
+            extra_compile_args=EXTRA_COMPILE_ARGS,
             include_dirs=[str(src_dir)],
             language="c++",
             quiet=True,

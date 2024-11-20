@@ -1,9 +1,12 @@
 from typing import ClassVar
+import sys
 import witty
 import numpy as np
 from Cheetah.Template import Template
 from pathlib import Path
 from ..dtypes import DType
+
+DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
 
 
 class RTree:
@@ -97,10 +100,11 @@ class RTree:
                 src_dir / "src" / "rtree.c",
                 src_dir / "src" / "config.h",
             ],
-            extra_compile_args=["-O3"],
+            extra_compile_args=["/O2" if sys.platform == "win32" else "-O3"],
             include_dirs=[str(src_dir)],
             language="c",
             quiet=True,
+            define_macros=DEFINE_MACROS,
         )
         RTreeType = type(cls.__name__, (cls, wrapper.RTree), {})
         return wrapper.RTree.__new__(RTreeType)
