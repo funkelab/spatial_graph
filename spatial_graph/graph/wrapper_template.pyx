@@ -266,21 +266,18 @@ cdef class Graph:
 
     %end for
 
-    def nodes(self, bint data=False):
+    def nodes(self):
+        """Get all node IDs."""
 
         cdef NodeIterator it = self._graph.begin()
         cdef NodeIterator end = self._graph.end()
-        cdef NodeDataView node_data = NodeDataView()
+        node_ids = np.empty((self._graph.size(),), dtype="$node_dtype.base")
 
-        if data:
-            while it != end:
-                node_data.set_ptr(&self._graph.node_prop(it))
-                yield deref(it), node_data
-                inc(it)
-        else:
-            while it != end:
-                yield deref(it)
-                inc(it)
+        for i in range(self._graph.size()):
+            node_ids[i] = deref(it)
+            inc(it)
+
+        return node_ids
 
     %if $directed
     %set $prefixes=["in_", "out_"]
@@ -372,11 +369,19 @@ cdef class Graph:
 
     # generator access to node and edge data
 
-    def nodes_data(self, NodeType[::1] nodes):
+    def nodes_data(self, NodeType[::1] nodes = None):
+        cdef NodeIterator node_it = self._graph.begin()
+        cdef NodeIterator node_end = self._graph.end()
         cdef NodeDataView node_data = NodeDataView()
-        for node in nodes:
-            node_data.set_ptr(&self._graph.node_prop(node))
-            yield node, node_data
+        if nodes is None:
+            while node_it != node_end:
+                node_data.set_ptr(&self._graph.node_prop(node_it))
+                yield deref(node_it), node_data
+                inc(node_it)
+        else:
+            for node in nodes:
+                node_data.set_ptr(&self._graph.node_prop(node))
+                yield node, node_data
 
     def edges_data(self, NodeType[::1] us, NodeType[::1] vs):
         cdef EdgeDataView edge_data = EdgeDataView()

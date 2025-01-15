@@ -62,6 +62,10 @@ class SpatialGraph(Graph):
     def query_nearest_edges(self, point, k, return_distances=False):
         return self._edge_rtree.nearest(point, k, return_distances)
 
+    @property
+    def nodes(self):
+        return super().nodes()
+
     def remove_nodes(self, nodes):
         positions = getattr(self.node_attrs[nodes], self.position_attr)
         self._node_rtree.delete_items(nodes, positions)

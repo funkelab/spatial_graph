@@ -141,12 +141,12 @@ def test_attribute_modification():
 
     # modify via generators:
 
-    for node, attrs in graph.nodes(data=True):
+    for node, attrs in graph.node_attrs:
         attrs.attr1 += 10.0
         attrs.attr2 *= 2
         attrs.attr3 *= np.float32(3.0)
 
-    for node, attrs in graph.nodes(data=True):
+    for node, attrs in graph.node_attrs:
         assert attrs.attr1 == (node / 10.0) + 10.0
         assert attrs.attr2 == node * 2
         np.testing.assert_array_almost_equal(attrs.attr3, [0.3, 0.6, 0.9])
