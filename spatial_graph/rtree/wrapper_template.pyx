@@ -140,6 +140,7 @@ cdef extern from *:
         const coord_t *max,
         const item_t item)
     cdef size_t rtree_count(const rtree *tr)
+    cdef void rtree_bb(const rtree *tr, coord_t *min, coord_t *max)
 
 
 cdef pyx_items_t memview_to_pyx_items_t($item_dtype.to_pyxtype(add_dim=True) items):
@@ -268,6 +269,14 @@ cdef class RTree:
             &num)
 
         return num
+
+    def bounding_box(self):
+        bb_min = np.empty(($dims,), dtype="$coord_dtype.base")
+        bb_max = np.empty(($dims,), dtype="$coord_dtype.base")
+        cdef coord_t[::1] _bb_min = bb_min
+        cdef coord_t[::1] _bb_max = bb_max
+        rtree_bb(self._rtree, &_bb_min[0], &_bb_max[0])
+        return (bb_min, bb_max)
 
     def search(self, coord_t[::1] bb_min, coord_t[::1] bb_max):
 

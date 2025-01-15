@@ -66,6 +66,9 @@ void rtree_scan(const struct rtree *tr,
 // rtree_count returns the number of items in the rtree.
 size_t rtree_count(const struct rtree *tr);
 
+// query the total bounding box of the rtree
+void rtree_bb(const struct rtree *tr, coord_t* min, coord_t* max);
+
 // rtree_delete deletes an item from the rtree.
 //
 // This searches the tree for an item that is contained within the provided

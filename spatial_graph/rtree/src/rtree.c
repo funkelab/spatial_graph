@@ -848,6 +848,11 @@ size_t rtree_count(const struct rtree *tr) {
 	return tr->count;
 }
 
+void rtree_bb(const struct rtree *tr, coord_t* min, coord_t* max) {
+	memcpy(min, tr->rect.min, sizeof(coord_t)*DIMS);
+	memcpy(max, tr->rect.max, sizeof(coord_t)*DIMS);
+}
+
 static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 	struct rect *ir, item_t item, int depth, bool *removed, bool *shrunk,
 	int (*compare)(const item_t a, const item_t b, void *udata),

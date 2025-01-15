@@ -16,16 +16,16 @@ class SpatialGraph(Graph):
         position_attr,
         directed=False,
     ):
-        assert position_attr in node_attr_dtypes, (
-            f"position attribute '{position_attr}' not defined in " "'node_attr_dtypes'"
-        )
+        assert (
+            position_attr in node_attr_dtypes
+        ), f"position attribute '{position_attr}' not defined in 'node_attr_dtypes'"
         super().__init__(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
 
         self.ndims = ndims
         self.position_attr = position_attr
-        coord_dtype = DType(node_attr_dtypes[position_attr]).base
-        self._node_rtree = PointRTree(node_dtype, coord_dtype, ndims)
-        self._edge_rtree = LineRTree(f"{node_dtype}[2]", coord_dtype, ndims)
+        self.coord_dtype = DType(node_attr_dtypes[position_attr]).base
+        self._node_rtree = PointRTree(node_dtype, self.coord_dtype, ndims)
+        self._edge_rtree = LineRTree(f"{node_dtype}[2]", self.coord_dtype, ndims)
 
     def add_node(self, node, **kwargs):
         position = self._get_position(kwargs)
@@ -49,6 +49,10 @@ class SpatialGraph(Graph):
         ends = getattr(self.node_attrs[edges[:, 1]], self.position_attr)
         self._edge_rtree.insert_lines(edges, starts, ends)
         super().add_edges(edges, **kwargs)
+
+    @property
+    def roi(self):
+        return self._node_rtree.bounding_box()
 
     def query_nodes_in_roi(self, roi):
         return self._node_rtree.search(roi[0], roi[1])
