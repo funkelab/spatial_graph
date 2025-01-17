@@ -32,13 +32,15 @@ def test_node_access():
     graph.node_attrs[1].position
 
 
-def test_edge_access():
+@pytest.mark.parametrize("directed", [True, False])
+def test_edge_access(directed):
     graph = sg.SpatialGraph(
         ndims=3,
         node_dtype="uint64",
         node_attr_dtypes={"position": "double[3]"},
         edge_attr_dtypes={"score": "double"},
         position_attr="position",
+        directed=directed,
     )
     graph.add_node(1, position=np.array([1.0, 1.0, 1.0]))
     graph.add_node(2, position=np.array([2.0, 2.0, 2.0]))
@@ -46,23 +48,35 @@ def test_edge_access():
     graph.add_node(4, position=np.array([4.0, 4.0, 4.0]))
     graph.add_edge([1, 2], score=0.5)
     graph.add_edge([2, 3], score=0.4)
-    graph.add_edge([2, 4], score=0.3)
-    graph.add_edge([3, 4], score=0.2)
+    graph.add_edge([4, 2], score=0.3)
+    graph.add_edge([4, 3], score=0.2)
 
     edges = np.array([[1, 2], [2, 3]], dtype=np.uint64)
 
     # attribute of all edges
-    graph.edge_attrs.score
+    np.testing.assert_equal(
+        np.sort(graph.edge_attrs.score), np.array([0.2, 0.3, 0.4, 0.5], dtype="double")
+    )
     # attribute of edges as ndarray
-    graph.edge_attrs[edges].score
+    np.testing.assert_equal(
+        graph.edge_attrs[edges].score, np.array([0.5, 0.4], dtype="double")
+    )
     # attribute of edges as list
-    graph.edge_attrs[[[1, 2], [2, 3]]].score
+    np.testing.assert_equal(
+        graph.edge_attrs[[[1, 2], [2, 3]]].score, np.array([0.5, 0.4], dtype="double")
+    )
     # attribute of edges as tuple
-    graph.edge_attrs[[(1, 2), (2, 3)]].score
+    np.testing.assert_equal(
+        graph.edge_attrs[[(1, 2), (2, 3)]].score, np.array([0.5, 0.4], dtype="double")
+    )
     # attribute of single edge as numpy array
-    graph.edge_attrs[edges[0]].score
+    np.testing.assert_equal(
+        graph.edge_attrs[edges[0]].score, np.array([0.5], dtype="double")
+    )
     # attribute of single edge as python tuple
-    graph.edge_attrs[(1, 2)].score
+    np.testing.assert_equal(
+        graph.edge_attrs[(1, 2)].score, np.array([0.5], dtype="double")
+    )
 
 
 dtypes = ["float", "double", "int8", "uint8", "int16", "uint16"]
