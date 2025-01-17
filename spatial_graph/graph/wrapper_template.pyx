@@ -277,7 +277,9 @@ cdef class Graph:
             node_ids[i] = deref(it)
             inc(it)
 
-        return node_ids
+        # graph_lite iterates over nodes in reverse order of addition, fix that
+        # here
+        return node_ids[::-1]
 
     %if $directed
     %set $prefixes=["in_", "out_"]
