@@ -1,5 +1,32 @@
 import spatial_graph as sg
 import numpy as np
+import pytest
+
+node_dtypes = ["int8", "uint8", "int16", "uint16"]
+node_attr_dtypes = [
+    {"position": "double[4]"},
+    {"position": "int[4]"},
+]
+edge_attr_dtypes = [
+    {},
+    {"score": "float64"},
+    {"score": "float64", "color": "uint8"},
+]
+
+
+@pytest.mark.parametrize("node_dtype", node_dtypes)
+@pytest.mark.parametrize("node_attr_dtypes", node_attr_dtypes)
+@pytest.mark.parametrize("edge_attr_dtypes", edge_attr_dtypes)
+@pytest.mark.parametrize("directed", [True, False])
+def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed):
+    sg.SpatialGraph(
+        ndims=4,
+        node_dtype=node_dtype,
+        node_attr_dtypes=node_attr_dtypes,
+        edge_attr_dtypes=edge_attr_dtypes,
+        position_attr="position",
+        directed=directed,
+    )
 
 
 def test_roi_query():
