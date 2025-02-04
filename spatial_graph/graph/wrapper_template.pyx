@@ -537,7 +537,7 @@ cdef class Graph:
                 end = edges_view.second
                 while it != end:
                     v = deref(it).first
-                    if u < v:
+                    if ${directed} or u < v:
                         %if $dtype.is_array
                         edge_data = &deref(it).second.prop()
                         %for j in range($dtype.size)
