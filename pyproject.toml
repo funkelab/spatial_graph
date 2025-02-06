@@ -19,7 +19,7 @@ dependencies = [
 homepage = "https://github.com/funkelab/spatial_graph"
 repository = "https://github.com/funkelab/spatial_graph"
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=8.3.4",
 ]
