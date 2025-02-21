@@ -57,6 +57,104 @@ class RTree:
 
                 The scalar type of the item (e.g., ``uint64``), regardless of
                 whether this is a scalar or array item.
+
+    insert_point_items():
+
+        Args:
+
+            items (ndarray):
+
+                Array of shape `(n,)` (one scalar per item) or `(n, k)` (one
+                array of `k` scalars per item).
+
+            points (ndarray):
+
+                Array of shape `(n, dims)`, the positions of the points to
+                insert.
+
+    insert_bb_items():
+
+        Args:
+
+            items (ndarray):
+
+                Array of shape `(n,)` (one scalar per item) or `(n, k)` (one
+                array of `k` scalars per item).
+
+            bb_mins/bb_maxs (ndarray):
+
+                Array of shape `(n, dims)`, the minimum/maximum points of the
+                bounding boxes per item to insert.
+
+    count():
+
+        Count the number of items in a bounding box.
+
+        Args:
+
+            bb_min/bb_max (ndarray):
+
+                Array of shape `(dims,)`, the minimum/maximum point of the
+                bounding box to count items in.
+
+    bounding_box():
+
+        Get the total bounding box of all items in this RTree.
+
+    search():
+
+        Get all items contained in a bounding box.
+
+        Args:
+
+            bb_min/bb_max (ndarray):
+
+                Array of shape `(dims,)`, the minimum/maximum point of the
+                bounding box to search items in.
+
+    nearest():
+
+        Get the nearest items to a given point.
+
+        Args:
+
+            point (ndarray):
+
+                The coordinates of the query point.
+
+            k (int):
+
+                The maximal number of items to return.
+
+            return_distances (bool):
+
+                If `True`, return a tuple of `(items, distances)`, where
+                `distances` contains the distance of each found item to the
+                query point.
+
+    delete_items():
+
+        Delete items by their content and bounding box. Only items that match
+        both the `items` row (a scalar or array, depending on `item_dtype`) and
+        the exact coordinates of their bounding box will be deleted.
+
+        Args:
+
+            items (ndarray):
+
+                Array of shape `(n,)` (one scalar per item) or `(n, k)` (one
+                array of `k` scalars per item).
+
+            bb_mins/bb_maxs (ndarray):
+
+                Array of shape `(n, dims)`, the minimum/maximum points of the
+                bounding boxes per item to delete. `bb_maxs` is optional for
+                point items, where min and max are the same.
+
+    __len__():
+
+        Get the number of items in this RTree.
+
     """
 
     # overwrite in subclasses for custom item_t structures
@@ -120,11 +218,19 @@ class RTree:
         self.item_dtype = DType(item_dtype)
 
     def insert_point_item(self, item, position):
+        """Insert a single point item.
+
+        To insert multiple points, use `insert_point_items`.
+        """
         items = np.array([item], dtype=self.item_dtype.base)
         positions = position[np.newaxis]
         return self.insert_point_items(items, positions)
 
     def delete_item(self, item, bb_min, bb_max=None):
+        """Delete a single item.
+
+        To delete multiple items, use `delete_items`.
+        """
         items = np.array([item], dtype=self.item_dtype.base)
         bb_mins = bb_min[np.newaxis, :]
         bb_maxs = None if bb_max is None else bb_max[np.newaxis, :]
