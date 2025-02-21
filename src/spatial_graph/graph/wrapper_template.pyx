@@ -359,9 +359,12 @@ cdef class Graph:
                 %if $prefix == "in_"
                 edges[i, 0] = v
                 edges[i, 1] = u
-                %else
+                %elif $prefix == "out_"
                 edges[i, 0] = u
                 edges[i, 1] = v
+                %else
+                edges[i, 0] = min(u, v)
+                edges[i, 1] = max(u, v)
                 %end if
                 i += 1
                 inc(it)
