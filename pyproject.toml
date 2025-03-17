@@ -1,5 +1,5 @@
 [project]
-name = "spatial_graph"
+name = "spatial-graph"
 version = "0.0.1"
 description = "A spatial graph datastructure for python."
 readme = "README.md"
