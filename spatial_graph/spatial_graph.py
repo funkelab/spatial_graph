@@ -16,9 +16,8 @@ class SpatialGraph(Graph):
         position_attr,
         directed=False,
     ):
-        assert (
-            position_attr in node_attr_dtypes
-        ), f"position attribute '{position_attr}' not defined in 'node_attr_dtypes'"
+        if position_attr not in node_attr_dtypes:
+            raise ValueError(f"position attribute {position_attr!r} not defined in 'node_attr_dtypes'")
         super().__init__(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
 
         self.ndims = ndims
