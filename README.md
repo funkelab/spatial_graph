@@ -1,6 +1,6 @@
 # spatial_graph
 
-[![tests](https://github.com/funkelab/spatial_graph/actions/workflows/tests.yaml/badge.svg)](https://github.com/funkelab/spatial_graph/actions/workflows/tests.yaml)
+[![CI](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yaml/badge.svg)](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yaml)
 
 `spatial_graph` provides a data structure for directed and undirected graphs,
 where each node has an nD position (in time or space).
