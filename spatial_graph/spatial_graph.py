@@ -1,3 +1,6 @@
+from operator import le
+from typing import Any, Mapping
+import warnings
 from .graph import Graph
 from .rtree import PointRTree, LineRTree
 from .dtypes import DType
@@ -10,12 +13,13 @@ class SpatialGraph(Graph):
     def __init__(
         self,
         ndims,
-        node_dtype,
-        node_attr_dtypes,
-        edge_attr_dtypes,
-        position_attr,
-        directed=False,
-    ):
+        node_dtype: str,
+        node_attr_dtypes: Mapping[str, str] | None = None,
+        edge_attr_dtypes: Mapping[str, str] | None = None,
+        position_attr: str = "position",
+        directed: bool = False,
+    ) -> None:
+        node_attr_dtypes = node_attr_dtypes or {}
         if position_attr not in node_attr_dtypes:
             raise ValueError(
                 f"position attribute {position_attr!r} not defined in 'node_attr_dtypes'"
@@ -33,13 +37,20 @@ class SpatialGraph(Graph):
         self._node_rtree.insert_point_item(node, position)
         super().add_node(node, **kwargs)
 
-    def add_nodes(self, nodes, **kwargs):
+    def add_nodes(self, nodes: Any, **kwargs: Any) -> None:
         positions = self._get_position(kwargs)
         self._node_rtree.insert_point_items(nodes, positions)
         super().add_nodes(nodes, **kwargs)
 
     def add_edge(self, edge, **kwargs):
         edge = np.array(edge, dtype=self.node_dtype)
+        if len(edge) == 2:
+            if len(edge) == 1:
+                raise ValueError(f"edge {edge} must be a 2-tuple or 2-list")
+            warnings.warn(
+                "Only the first two elements of the edge are used", stacklevel=2
+            )
+
         position_u = getattr(self.node_attrs[edge[0]], self.position_attr)
         position_v = getattr(self.node_attrs[edge[1]], self.position_attr)
         self._edge_rtree.insert_line(edge, position_u, position_v)

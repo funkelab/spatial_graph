@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, Iterator, Self, TypeVar
 
 import numpy as np
 import witty
@@ -13,6 +12,8 @@ from ..dtypes import DType
 
 if TYPE_CHECKING:
     import numbers
+    from collections.abc import Mapping
+    from typing_extensions import Self
 
 # Set platform-specific compile arguments
 if sys.platform == "win32":
@@ -22,8 +23,46 @@ else:
     # -O3 for optimization and -std=c++20 for C++20
     EXTRA_COMPILE_ARGS = ["-O3", "-std=c++20"]
 
+NT = TypeVar("NT")
 
-class Graph:
+
+class Graph(Generic[NT]):
+    if TYPE_CHECKING:
+
+        def add_edge(self, edge: np.ndarray, *args: Any, **kwargs: Any) -> int:
+            """Add an edge to the graph.
+
+            Names/number of args kwargs must match the edge_attr_dtypes.
+            """
+
+        def add_edges(
+            self, edges: np.ndarray, *args: np.ndarray, **kwargs: np.ndarray
+        ) -> int:
+            """Add multiple edges to the graph.
+
+            edges must be 2D and names/number of args kwargs must match the
+            edge_attr_dtypes.
+            """
+
+        def add_node(self, node: NT, *data: Any) -> int: ...
+        def add_nodes(self, nodes: np.ndarray, *data: Any) -> int: ...
+        def edges(self, node: Any = None, data: bool = False) -> Iterator: ...
+        def edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray: ...
+        def edges_data(self, us: np.ndarray, vs: np.ndarray) -> Iterator: ...
+        def nodes(self) -> np.ndarray: ...
+        def nodes_data(
+            self, nodes: np.ndarray | None = None
+        ) -> Iterator[tuple[Any, Any]]: ...
+        def num_edges(self) -> int: ...
+        def remove_node(self, node: Any) -> None: ...
+        def remove_nodes(self, nodes: np.ndarray) -> None: ...
+
+        # only for undirected
+        def count_neighbors(self, nodes: np.ndarray) -> int: ...
+        # only for directed
+        def count_in_neighbors(self, nodes: np.ndarray) -> int: ...
+        def count_out_neighbors(self, nodes: np.ndarray) -> int: ...
+
     def __new__(
         cls,
         node_dtype: str,
@@ -32,7 +71,7 @@ class Graph:
         directed: bool = False,
         *args: Any,
         **kwargs: Any,
-    ) -> Graph:
+    ) -> Self:
         src_dir = Path(__file__).parent
         wrapper_template = Template(
             file=str(src_dir / "wrapper_template.pyx"),
