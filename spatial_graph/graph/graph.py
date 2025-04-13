@@ -1,9 +1,18 @@
+from __future__ import annotations
+
 import sys
-import witty
+from collections.abc import Mapping
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
+import witty
 from Cheetah.Template import Template
+
 from ..dtypes import DType
+
+if TYPE_CHECKING:
+    import numbers
 
 # Set platform-specific compile arguments
 if sys.platform == "win32":
@@ -17,36 +26,29 @@ else:
 class Graph:
     def __new__(
         cls,
-        node_dtype,
-        node_attr_dtypes=None,
-        edge_attr_dtypes=None,
-        directed=False,
-        *args,
-        **kwargs,
-    ):
-        if node_attr_dtypes is None:
-            node_attr_dtypes = {}
-        if edge_attr_dtypes is None:
-            edge_attr_dtypes = {}
-
-        node_dtype = DType(node_dtype)
-        node_attr_dtypes = {
-            name: DType(dtype) for name, dtype in node_attr_dtypes.items()
-        }
-        edge_attr_dtypes = {
-            name: DType(dtype) for name, dtype in edge_attr_dtypes.items()
-        }
-
+        node_dtype: str,
+        node_attr_dtypes: Mapping[str, str] | None = None,
+        edge_attr_dtypes: Mapping[str, str] | None = None,
+        directed: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Graph:
         src_dir = Path(__file__).parent
         wrapper_template = Template(
             file=str(src_dir / "wrapper_template.pyx"),
             compilerSettings={"directiveStartToken": "%"},
         )
-        wrapper_template.node_dtype = node_dtype
-        wrapper_template.node_attr_dtypes = node_attr_dtypes
-        wrapper_template.edge_attr_dtypes = edge_attr_dtypes
+        wrapper_template.node_dtype = DType(node_dtype)
+        wrapper_template.node_attr_dtypes = {
+            name: DType(dtype) for name, dtype in (node_attr_dtypes or {}).items()
+        }
+        wrapper_template.edge_attr_dtypes = {
+            name: DType(dtype) for name, dtype in (edge_attr_dtypes or {}).items()
+        }
         wrapper_template.directed = directed
 
+        # dynamically compile a specialized C++ implementation of the graph
+        # tailored to the user's specific type requirements.
         wrapper = witty.compile_module(
             str(wrapper_template),
             source_files=[str(src_dir / "src" / "graph_lite.h")],
@@ -55,20 +57,28 @@ class Graph:
             language="c++",
             quiet=True,
         )
+
+        # create a new class that inherits from both this class (Graph or a subclass)
+        # and the compiled c++ implementation `wrapper.Graph`
         GraphType = type(cls.__name__, (cls, wrapper.Graph), {})
+
+        # call the __new__ method of the native C++ class, but pass the dynamically
+        # created class as the type.  This ensures the object will be an instance
+        # of the dynamically created class, but using the C++ allocation logic and
+        # initialization code.
         return wrapper.Graph.__new__(GraphType)
 
     def __init__(
-        self, node_dtype, node_attr_dtypes=None, edge_attr_dtypes=None, directed=False
-    ):
-        if node_attr_dtypes is None:
-            node_attr_dtypes = {}
-        if edge_attr_dtypes is None:
-            edge_attr_dtypes = {}
+        self,
+        node_dtype: str,
+        node_attr_dtypes: Mapping[str, str] | None = None,
+        edge_attr_dtypes: Mapping[str, str] | None = None,
+        directed: bool = False,
+    ) -> None:
         super().__init__()
         self.node_dtype = node_dtype
-        self.node_attr_dtypes = node_attr_dtypes
-        self.edge_attr_dtypes = edge_attr_dtypes
+        self.node_attr_dtypes = node_attr_dtypes or {}
+        self.edge_attr_dtypes = edge_attr_dtypes or {}
         self.directed = directed
 
         self.node_attrs = NodeAttrs(self)
@@ -76,14 +86,17 @@ class Graph:
 
 
 class NodeAttrsView:
-    def __init__(self, graph, nodes):
-        super().__setattr__("graph", graph)
+    graph: Graph
+    nodes: np.ndarray | numbers.Number | None
+
+    def __init__(self, graph: Graph, nodes: Any = None) -> None:
+        object.__setattr__(self, "graph", graph)
         for name in graph.node_attr_dtypes.keys():
-            super().__setattr__(
-                f"get_attr_{name}", getattr(graph, f"get_nodes_data_{name}")
+            object.__setattr__(
+                self, f"get_attr_{name}", getattr(graph, f"get_nodes_data_{name}")
             )
-            super().__setattr__(
-                f"set_attr_{name}", getattr(graph, f"set_nodes_data_{name}")
+            object.__setattr__(
+                self, f"set_attr_{name}", getattr(graph, f"set_nodes_data_{name}")
             )
 
         if nodes is not None and not isinstance(nodes, np.ndarray):
@@ -96,18 +109,22 @@ class NodeAttrsView:
             except Exception:
                 # must be a single node
                 for name in graph.node_attr_dtypes.keys():
-                    super().__setattr__(
-                        f"set_attr_{name}", getattr(graph, f"set_node_data_{name}")
+                    object.__setattr__(
+                        self,
+                        f"set_attr_{name}",
+                        getattr(graph, f"set_node_data_{name}"),
                     )
-                    super().__setattr__(
-                        f"get_attr_{name}", getattr(graph, f"get_node_data_{name}")
+                    object.__setattr__(
+                        self,
+                        f"get_attr_{name}",
+                        getattr(graph, f"get_node_data_{name}"),
                     )
 
         # at this point, nodes is either
         # 1. a numpy array
         # 2. a scalar (python or numpy)
         # 3. None
-        super().__setattr__("nodes", nodes)
+        object.__setattr__(self, "nodes", nodes)
 
     def __getattr__(self, name):
         if name in self.graph.node_attr_dtypes:
@@ -119,7 +136,7 @@ class NodeAttrsView:
         if name in self.graph.node_attr_dtypes:
             return getattr(self, f"set_attr_{name}")(self.nodes, values)
         else:
-            return super().__setattr__(name, values)
+            return object.__setattr__(self, name, values)
 
     def __iter__(self):
         # TODO: shouldn't be possible if nodes is a single node
@@ -127,14 +144,17 @@ class NodeAttrsView:
 
 
 class EdgeAttrsView:
-    def __init__(self, graph, edges):
-        super().__setattr__("graph", graph)
+    graph: Graph
+    edges: np.ndarray | tuple[numbers.Number, numbers.Number] | None
+
+    def __init__(self, graph: Graph, edges: Any = None) -> None:
+        object.__setattr__(self, "graph", graph)
         for name in graph.edge_attr_dtypes.keys():
-            super().__setattr__(
-                f"get_attr_{name}", getattr(graph, f"get_edges_data_{name}")
+            object.__setattr__(
+                self, f"get_attr_{name}", getattr(graph, f"get_edges_data_{name}")
             )
-            super().__setattr__(
-                f"set_attr_{name}", getattr(graph, f"set_edges_data_{name}")
+            object.__setattr__(
+                self, f"set_attr_{name}", getattr(graph, f"set_edges_data_{name}")
             )
 
         # edges types we support:
@@ -175,18 +195,18 @@ class EdgeAttrsView:
         elif isinstance(edges, tuple):
             # a single edge
             for name in graph.edge_attr_dtypes.keys():
-                super().__setattr__(
-                    f"get_attr_{name}", getattr(graph, f"get_edge_data_{name}")
+                object.__setattr__(
+                    self, f"get_attr_{name}", getattr(graph, f"get_edge_data_{name}")
                 )
-                super().__setattr__(
-                    f"set_attr_{name}", getattr(graph, f"set_edge_data_{name}")
+                object.__setattr__(
+                    self, f"set_attr_{name}", getattr(graph, f"set_edge_data_{name}")
                 )
 
         # at this point, edges is either
         # 1. a nx2 numpy array
         # 2. a 2-tuple of scalars (python or numpy)
         # 3. None
-        super().__setattr__("edges", edges)
+        object.__setattr__(self, "edges", edges)
 
     def __getattr__(self, name):
         if name in self.graph.edge_attr_dtypes:
@@ -203,7 +223,7 @@ class EdgeAttrsView:
                 self.edges[0], self.edges[1], values
             )
         else:
-            return super().__setattr__(name, values)
+            return object.__setattr__(self, name, values)
 
     def __iter__(self):
         # TODO: shouldn't be possible if edges is a single edge
@@ -211,16 +231,10 @@ class EdgeAttrsView:
 
 
 class NodeAttrs(NodeAttrsView):
-    def __init__(self, graph):
-        super().__init__(graph, nodes=None)
-
-    def __getitem__(self, nodes):
+    def __getitem__(self, nodes: Any) -> NodeAttrsView:
         return NodeAttrsView(self.graph, nodes)
 
 
 class EdgeAttrs(EdgeAttrsView):
-    def __init__(self, graph):
-        super().__init__(graph, edges=None)
-
-    def __getitem__(self, edges):
+    def __getitem__(self, edges: Any) -> EdgeAttrsView:
         return EdgeAttrsView(self.graph, edges)
