@@ -122,7 +122,7 @@ class DType:
                                 if an array type and array_index is given
         """
 
-        if self.is_array:
+        if self.size:
             if array_index:
                 return (
                     "{"
