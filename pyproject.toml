@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "spatial-graph"
 version = "0.0.1"
@@ -5,28 +9,19 @@ description = "A spatial graph datastructure for python."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-authors = [
-    { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
-]
-dependencies = [
-  "witty>=v0.2.0",
-  "cheetah3",
-  "numpy",
-  "setuptools>=75.8.0",
-]
+authors = [{ email = "funkej@janelia.hhmi.org", name = "Jan Funke" }]
+dependencies = ["witty>=v0.2.0", "CT3", "numpy", "setuptools>=75.8.0"]
 
 [project.urls]
 homepage = "https://github.com/funkelab/spatial_graph"
 repository = "https://github.com/funkelab/spatial_graph"
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.3.4",
-]
+dev = ["pytest>=8.3.4"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore:'cgi' is deprecated:DeprecationWarning"]
