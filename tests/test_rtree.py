@@ -1,5 +1,6 @@
-from spatial_graph import PointRTree, LineRTree
 import numpy as np
+
+from spatial_graph import LineRTree, PointRTree
 
 
 def test_search():
