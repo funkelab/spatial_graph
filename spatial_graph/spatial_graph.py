@@ -1,4 +1,3 @@
-from operator import le
 from typing import Any, Mapping
 import warnings
 from .graph import Graph
