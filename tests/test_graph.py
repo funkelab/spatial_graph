@@ -75,6 +75,7 @@ def test_operations(directed):
 
         for edge, attrs in graph.edges(data=True):
             assert attrs.score == edge[0] * 100 + edge[1]
+    breakpoint()
 
 
 def test_directed_edges():

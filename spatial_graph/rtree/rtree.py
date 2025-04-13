@@ -1,10 +1,15 @@
-from typing import ClassVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, ClassVar
 import sys
 import witty
 import numpy as np
 from Cheetah.Template import Template
 from pathlib import Path
 from ..dtypes import DType
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
 
@@ -66,15 +71,7 @@ class RTree:
     # overwrite in subclasses for custom distance computation
     c_distance_function: ClassVar[str] = ""
 
-    def __new__(
-        cls,
-        item_dtype,
-        coord_dtype,
-        dims,
-    ):
-        item_dtype = DType(item_dtype)
-        coord_dtype = DType(coord_dtype)
-
+    def __new__(cls, item_dtype: str, coord_dtype: str, dims: int) -> Self:
         ############################################
         # create wrapper from template and compile #
         ############################################
@@ -84,8 +81,8 @@ class RTree:
             file=str(src_dir / "wrapper_template.pyx"),
             compilerSettings={"directiveStartToken": "%"},
         )
-        wrapper_template.item_dtype = item_dtype
-        wrapper_template.coord_dtype = coord_dtype
+        wrapper_template.item_dtype = DType(item_dtype)
+        wrapper_template.coord_dtype = DType(coord_dtype)
         wrapper_template.dims = dims
         wrapper_template.c_distance_function = cls.c_distance_function
         wrapper_template.pyx_item_t_declaration = cls.pyx_item_t_declaration
@@ -123,3 +120,23 @@ class RTree:
         bb_mins = bb_min[np.newaxis, :]
         bb_maxs = None if bb_max is None else bb_max[np.newaxis, :]
         return self.delete_items(items, bb_mins, bb_maxs)
+
+    if TYPE_CHECKING:
+
+        def insert_point_items(self, items: np.ndarray, points: np.ndarray) -> None: ...
+        def insert_bb_items(
+            self, items: np.ndarray, bb_mins: np.ndarray, bb_maxs: np.ndarray
+        ) -> None: ...
+        def count(self, bb_min: np.ndarray, bb_max: np.ndarray) -> int: ...
+        def bounding_box(self) -> tuple[np.ndarray, np.ndarray]: ...
+        def search(self, bb_min: np.ndarray, bb_max: np.ndarray) -> np.ndarray: ...
+        def nearest(
+            self, point: np.ndarray, k: int, return_distances: bool = False
+        ) -> np.ndarray | tuple[np.ndarray, np.ndarray]: ...
+        def delete_items(
+            self,
+            items: np.ndarray,
+            bb_mins: np.ndarray,
+            bb_maxs: np.ndarray | None = None,
+        ) -> int: ...
+        def __len__(self) -> int: ...
