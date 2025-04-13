@@ -19,8 +19,8 @@ VALID_BASE_TYPES = {
     "uint32": "uint32_t",
     "uint64": "uint64_t",
     # Platform-dependent types mapped to fixed-width equivalents
-    "int": "int32_t",  # Map generic int to standard 32-bit
-    "uint": "uint32_t",  # Map generic uint to standard 32-bit
+    "int": "int64_t",
+    "uint": "uint64_t",
 }
 
 # Regex pattern for dtype validation and extraction
