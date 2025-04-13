@@ -83,7 +83,7 @@ dtypes = ["float", "double", "int8", "uint8", "int16", "uint16"]
 
 
 @pytest.mark.parametrize("dtype", dtypes)
-def test_dtype(dtype):
+def test_attr_dtypes(dtype):
     graph = sg.SpatialGraph(
         ndims=3,
         node_dtype="uint64",
