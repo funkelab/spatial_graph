@@ -10,10 +10,15 @@ from spatial_graph.dtypes import DType
 # Set platform-specific compile arguments
 if sys.platform == "win32":
     # Use /O2 for optimization and /std:c++20 for C++20
-    EXTRA_COMPILE_ARGS = ["/O2", "/std:c++20"]
+    EXTRA_COMPILE_ARGS = ["/O2", "/std:c++20", "/wd4101"]
 else:
     # -O3 for optimization and -std=c++20 for C++20
-    EXTRA_COMPILE_ARGS = ["-O3", "-std=c++20"]
+    EXTRA_COMPILE_ARGS = [
+        "-O3",
+        "-std=c++20",
+        "-Wno-unused-variable",
+        "-Wno-unreachable-code",
+    ]
 
 
 class Graph:

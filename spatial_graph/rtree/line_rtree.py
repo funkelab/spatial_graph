@@ -94,8 +94,7 @@ inline coord_t point_segment_dist2(const coord_t point[], const coord_t start[],
     return length2(a);
 }
 
-inline coord_t distance(const coord_t point[], const struct rect *rect,
-                        const struct item_t item) {
+extern inline coord_t distance(const coord_t point[], const struct rect *rect, const struct item_t item) {
     coord_t start[DIMS];
     coord_t end[DIMS];
     for (int d = 0; d < DIMS; d++) {
