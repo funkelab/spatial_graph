@@ -1,7 +1,7 @@
-import spatial_graph as sg
-import pytest
 import numpy as np
+import pytest
 
+import spatial_graph as sg
 
 node_dtypes = ["int8", "uint8", "int16", "uint16"]
 node_attr_dtypes = [

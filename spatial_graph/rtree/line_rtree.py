@@ -1,5 +1,6 @@
-from .rtree import RTree
 import numpy as np
+
+from .rtree import RTree
 
 
 class LineRTree(RTree):
@@ -19,7 +20,8 @@ typedef struct item_t {
 """
 
     c_converter_functions = """
-inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *start, coord_t *end) {
+inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item,
+                                    coord_t *start, coord_t *end) {
     item_t item;
     coord_t tmp;
     item.u = (*pyx_item)[0];
@@ -56,7 +58,8 @@ inline coord_t length2(const coord_t x[]) {
     return length2;
 }
 
-inline coord_t point_segment_dist2(const coord_t point[], const coord_t start[], const coord_t end[]) {
+inline coord_t point_segment_dist2(const coord_t point[], const coord_t start[],
+                                   const coord_t end[]) {
 
     coord_t a[DIMS];
     coord_t b[DIMS];

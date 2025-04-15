@@ -1,10 +1,12 @@
-from typing import ClassVar
 import sys
-import witty
-import numpy as np
-from Cheetah.Template import Template
 from pathlib import Path
-from ..dtypes import DType
+from typing import ClassVar
+
+import numpy as np
+import witty
+from Cheetah.Template import Template
+
+from spatial_graph.dtypes import DType
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
 if sys.platform == "win32":

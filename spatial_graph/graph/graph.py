@@ -1,9 +1,11 @@
 import sys
-import witty
 from pathlib import Path
+
 import numpy as np
+import witty
 from Cheetah.Template import Template
-from ..dtypes import DType
+
+from spatial_graph.dtypes import DType
 
 # Set platform-specific compile arguments
 if sys.platform == "win32":
