@@ -1,12 +1,18 @@
-from typing import ClassVar
 import sys
-import witty
-import numpy as np
-from Cheetah.Template import Template
 from pathlib import Path
-from ..dtypes import DType
+from typing import ClassVar
+
+import numpy as np
+import witty
+from Cheetah.Template import Template
+
+from spatial_graph.dtypes import DType
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
+if sys.platform == "win32":
+    EXTRA_COMPILE_ARGS = ["/O2"]
+else:
+    EXTRA_COMPILE_ARGS = ["-O3", "-Wno-unreachable-code"]
 
 
 class RTree:
@@ -100,7 +106,7 @@ class RTree:
                 src_dir / "src" / "rtree.c",
                 src_dir / "src" / "config.h",
             ],
-            extra_compile_args=["/O2" if sys.platform == "win32" else "-O3"],
+            extra_compile_args=EXTRA_COMPILE_ARGS,
             include_dirs=[str(src_dir)],
             language="c",
             quiet=True,

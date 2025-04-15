@@ -1,4 +1,4 @@
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 try:
     __version__ = version("spatial_graph")
@@ -6,10 +6,8 @@ except PackageNotFoundError:
     __version__ = "unknown"
 
 
-from .rtree import PointRTree
-from .rtree import LineRTree
 from .graph import Graph
+from .rtree import LineRTree, PointRTree
 from .spatial_graph import SpatialGraph
 
-
-__all__ = ["PointRTree", "LineRTree", "Graph", "SpatialGraph"]
+__all__ = ["Graph", "LineRTree", "PointRTree", "SpatialGraph"]

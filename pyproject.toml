@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "spatial-graph"
 version = "0.0.1"
@@ -6,30 +10,41 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-    { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
+  { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
+  { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
 ]
-dependencies = [
-  "witty>=v0.2.0",
-  "cheetah3",
-  "numpy",
-  "setuptools>=75.8.0",
-]
+dependencies = ["witty>=v0.2.0", "CT3", "numpy", "setuptools>=75.8.0"]
 
 [project.urls]
 homepage = "https://github.com/funkelab/spatial_graph"
 repository = "https://github.com/funkelab/spatial_graph"
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.3.4",
-    "pre-commit",
-    "ruff",
-    "mypy",
+dev = ["pytest>=8.3.4", "ruff", "mypy", "pre-commit"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "E",   # style errors
+  "F",   # flakes
+  "W",   # warnings
+  "I",   # isort
+  "UP",  # pyupgrade
+  "TC",  # typing
+  "TID", # tidy imports
+  "RUF", # ruff
 ]
 
-[tool.hatch.metadata]
-allow-direct-references = true
+[tool.ruff.format]
+docstring-code-format = true
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.mypy]
+files = "*.py"
+strict = false
+disallow_any_generics = false
+disallow_subclassing_any = false
+show_error_codes = true
+pretty = true
