@@ -1,6 +1,8 @@
 from __future__ import annotations
-from spatial_graph.dtypes import DType, VALID_BASE_TYPES
+
 import pytest
+
+from spatial_graph.dtypes import VALID_BASE_TYPES, DType
 
 
 @pytest.mark.parametrize("size", [None, 2])
