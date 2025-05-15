@@ -13,14 +13,33 @@ authors = [
   { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
   { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
 ]
-dependencies = ["witty>=v0.2.0", "CT3", "numpy", "setuptools>=75.8.0"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+dependencies = ["witty>=v0.2.1", "CT3>=3.3.3", "numpy", "setuptools>=75.8.0"]
+
+[dependency-groups]
+dev = [
+  "ipython>=8.18.1",
+  "mypy>=1.15.0",
+  "pre-commit>=4.2.0",
+  "pytest>=8.3.5",
+  "pytest-cov>=6.1.1",
+  "ruff>=0.11.10",
+]
+
 
 [project.urls]
 homepage = "https://github.com/funkelab/spatial_graph"
 repository = "https://github.com/funkelab/spatial_graph"
-
-[project.optional-dependencies]
-dev = ["pytest>=8.3.4", "ruff", "mypy", "pre-commit"]
 
 [tool.ruff]
 target-version = "py39"
@@ -48,3 +67,7 @@ disallow_any_generics = false
 disallow_subclassing_any = false
 show_error_codes = true
 pretty = true
+
+[tool.pytest.ini_options]
+addopts = "-v --color=yes"
+filterwarnings = ["error", "ignore:'cgi' is deprecated"]

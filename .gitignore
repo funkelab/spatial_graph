@@ -11,3 +11,6 @@ build
 dist
 .vscode
 docs/_build/
+
+# remove me to enforce synchrony across development environments
+uv.lock
