@@ -24,7 +24,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Typing :: Typed",
 ]
-dependencies = ["witty>=v0.2.0", "CT3>=3.3.3", "numpy", "setuptools>=75.8.0"]
+dependencies = ["witty>=v0.2.1", "CT3>=3.3.3", "numpy", "setuptools>=75.8.0"]
 
 [dependency-groups]
 dev = [
@@ -70,4 +70,4 @@ pretty = true
 
 [tool.pytest.ini_options]
 addopts = "-v --color=yes"
-filterwarnings = ["error"]
+filterwarnings = ["error", "ignore:'cgi' is deprecated"]
