@@ -108,8 +108,35 @@ graph.remove_nodes(nodes[:1000])
 
 A `SpatialGraph` consists of three data structures:
 
-* The `Graph` itself, holding nodes, edges, and their attributes ([graphlite](https://github.com/haasdo95/graphlite)).
-* Two R-trees for spatial node and edge queries (based on [rtree.c](https://github.com/tidwall/rtree.c)).
+* The `Graph` itself, holding nodes, edges, and their attributes
+  ([graphlite](https://github.com/haasdo95/graphlite)).
+* Two R-trees for spatial node and edge queries (based on
+  [rtree.c](https://github.com/tidwall/rtree.c)). We modified the original code
+  to also include a fast kNN search.
+
+## Cross-Platform Support
+
+`spatial_graph` compiles C/C++ code at runtime, and as such needs access to a
+compiler. If you already have one, great! You can use the PyPI package.
+
+If you (or your users) don't have a compiler installed, you either need to
+
+1. Install a compiler. This might be weird for non-technical users.
+2. Install `spatial_graph` from `conda-forge`, where we include a compiler
+   (`clang`) in its dependencies.
+
+### Why is this so complicated?
+
+There is no cross-platform C/C++ compiler that we can install using `pip`.
+[`numba`](https://github.com/numba/numba) is maybe the closest to having solved
+that problem: `numba` does compile during runtime even if you don't have a
+compiler locally installed. This works because `numba` is generating LLVM IR,
+an intermediate representation language that LLVM can compile into machine
+code. `numba` depends on [`llvmlite`](https://github.com/numba/llvmlite), which
+provides a subset of the LLVM API, statically linked into the binaries in that
+package. This is just enough to compile the `numba` generated LLVM IR into
+machine code. We can't use this strategy, because we compile general C/C++
+code. Converting that into LLVM IR is exactly what we need a compiler for.
 
 ## For Developers
 
