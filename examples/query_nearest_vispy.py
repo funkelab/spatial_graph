@@ -84,7 +84,6 @@ def on_mouse_move(event):
     if set_data_count > 100:
         print(f"get_data(): {get_data_time / 100:.3f}s")
         print(f"set_data(): {set_data_time / 100:.3f}s")
-        get_data_count = 0
         set_data_count = 0
         get_data_time = 0.0
         set_data_time = 0.0
