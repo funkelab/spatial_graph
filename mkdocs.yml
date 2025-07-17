@@ -7,7 +7,7 @@ repo_name: funkelab/spatial_graph
 repo_url: https://github.com/funkelab/spatial_graph
 
 theme:
-  
+
   name: material
   palette:
     scheme: default
