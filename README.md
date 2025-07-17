@@ -1,15 +1,17 @@
-# spatial_graph
+# spatial-graph
 
+[![License](https://img.shields.io/pypi/l/spatial-graph.svg?color=green)](https://github.com/funkelab/spatial_graph/raw/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/spatial-graph.svg?color=green)](https://pypi.org/project/spatial-graph)
+[![Python Version](https://img.shields.io/pypi/pyversions/spatial-graph.svg?color=green)](https://python.org)
 [![CI](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yaml/badge.svg)](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/funkelab/spatial_graph/branch/main/graph/badge.svg)](https://codecov.io/gh/funkelab/spatial_graph)
 
 `spatial_graph` provides a data structure for directed and undirected graphs,
 where each node has an nD position (in time or space).
 
-Design Principles
-=================
+## Design Principles
 
-Goals
------
+### Goals
 
 * support for arbitrary number of dimensions
 * typed node identifiers and attributes
@@ -27,8 +29,7 @@ Goals
     * numpy for array interfaces
 * PYX API for graph algorithms in C/C++
 
-Non-Goals
----------
+### Non-Goals
 
 * graph algorithms
 * I/O
@@ -37,8 +38,7 @@ Non-Goals
 * out-of-memory support
 * networkx compatibility
 
-Python API
-==========
+## Python API
 
 Graph creation:
 
@@ -104,9 +104,21 @@ Delete nodes/edges:
 graph.remove_nodes(nodes[:1000])
 ```
 
-Implementation Details
-======================
+## Implementation Details
 
 A `SpatialGraph` consists of three data structures:
+
 * The `Graph` itself, holding nodes, edges, and their attributes ([graphlite](https://github.com/haasdo95/graphlite)).
 * Two R-trees for spatial node and edge queries (based on [rtree.c](https://github.com/tidwall/rtree.c)).
+
+## For Developers
+
+To create a new release, tag the current commit with a
+version number and push it to the `upstream` remote:
+
+```bash
+git tag -a "vX.Y.Z" -m "vX.Y.Z"
+git push upstream --follow-tags
+```
+
+This will trigger the CI workflow, which will build the package and upload it to PyPI.

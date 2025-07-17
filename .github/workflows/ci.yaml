@@ -2,11 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
     tags: [v*]
   workflow_dispatch:
 
@@ -38,8 +36,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
-      - name: Test with pytest
-        run: uv run pytest
+      - name: Test with coverage
+        run: uv run pytest -v --cov=spatial_graph --cov-report=xml
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   deploy:
     name: Deploy
