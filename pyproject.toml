@@ -31,13 +31,19 @@ classifiers = [
 dependencies = ["witty>=v0.2.1", "CT3>=3.3.3", "numpy", "setuptools>=75.8.0"]
 
 [dependency-groups]
+test = ["pytest>=8.3.5", "pytest-cov>=6.1.1"]
 dev = [
+  { include-group = "test" },
   "ipython>=8.18.1",
   "mypy>=1.15.0",
   "pre-commit>=4.2.0",
-  "pytest>=8.3.5",
-  "pytest-cov>=6.1.1",
   "ruff>=0.11.10",
+]
+docs = [
+  "mkdocs>=1.6.1",
+  "mkdocs-api-autonav>=0.3.0",
+  "mkdocs-material>=9.6.15",
+  "mkdocstrings-python>=1.16.12",
 ]
 
 
