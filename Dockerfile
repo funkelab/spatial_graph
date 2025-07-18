@@ -23,7 +23,7 @@ RUN set -eux; \
     chmod +x /usr/local/bin/bin/micromamba; \
     mv /usr/local/bin/bin/micromamba /usr/local/bin/micromamba; \
     rmdir /usr/local/bin/bin
-    
+
 
 WORKDIR /app
 COPY . /app
