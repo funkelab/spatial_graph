@@ -1,13 +1,16 @@
-from typing import Any, Mapping
 import warnings
-from .graph import Graph
-from .rtree import PointRTree, LineRTree
-from .dtypes import DType
+from collections.abc import Mapping
+from typing import Any, ClassVar
+
 import numpy as np
+
+from .dtypes import DType
+from .graph import Graph
+from .rtree import LineRTree, PointRTree
 
 
 class SpatialGraph(Graph):
-    edge_inclusion_values = ["incident", "leaving", "entering"]
+    edge_inclusion_values: ClassVar[list[str]] = ["incident", "leaving", "entering"]
 
     def __init__(
         self,
@@ -21,7 +24,8 @@ class SpatialGraph(Graph):
         node_attr_dtypes = node_attr_dtypes or {}
         if position_attr not in node_attr_dtypes:
             raise ValueError(
-                f"position attribute {position_attr!r} not defined in 'node_attr_dtypes'"
+                f"position attribute {position_attr!r} not defined in "
+                "'node_attr_dtypes'"
             )
         super().__init__(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
 

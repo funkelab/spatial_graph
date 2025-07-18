@@ -1,6 +1,7 @@
-import spatial_graph as sg
 import numpy as np
 import pytest
+
+import spatial_graph as sg
 
 
 def test_node_access():

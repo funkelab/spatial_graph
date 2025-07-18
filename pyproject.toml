@@ -1,35 +1,85 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+
 [project]
 name = "spatial-graph"
-version = "0.0.1"
+dynamic = ["version"]
 description = "A spatial graph datastructure for python."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-    { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
+  { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
+  { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
 ]
-dependencies = [
-  "witty>=v0.2.0",
-  "cheetah3",
-  "numpy",
-  "setuptools>=75.8.0",
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
 ]
+dependencies = ["witty>=v0.2.1", "CT3>=3.3.3", "numpy", "setuptools>=75.8.0"]
+
+[dependency-groups]
+test = ["pytest>=8.3.5", "pytest-cov>=6.1.1"]
+dev = [
+  { include-group = "test" },
+  "ipython>=8.18.1",
+  "mypy>=1.15.0",
+  "pre-commit>=4.2.0",
+  "ruff>=0.11.10",
+]
+docs = [
+  "mkdocs>=1.6.1",
+  "mkdocs-api-autonav>=0.3.0",
+  "mkdocs-material>=9.6.15",
+  "mkdocstrings-python>=1.16.12",
+]
+
 
 [project.urls]
 homepage = "https://github.com/funkelab/spatial_graph"
 repository = "https://github.com/funkelab/spatial_graph"
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.3.4",
-    "pre-commit",
-    "ruff",
-    "mypy",
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+fix = true
+unsafe-fixes = true
+
+[tool.ruff.lint]
+select = [
+  "E",   # style errors
+  "F",   # flakes
+  "W",   # warnings
+  "I",   # isort
+  "UP",  # pyupgrade
+  "TC",  # typing
+  "TID", # tidy imports
+  "RUF", # ruff
 ]
 
-[tool.hatch.metadata]
-allow-direct-references = true
+[tool.ruff.format]
+docstring-code-format = true
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.mypy]
+files = "*.py"
+strict = false
+disallow_any_generics = false
+disallow_subclassing_any = false
+show_error_codes = true
+pretty = true
+
+[tool.pytest.ini_options]
+addopts = "-v --color=yes"
+filterwarnings = ["error", "ignore:'cgi' is deprecated"]

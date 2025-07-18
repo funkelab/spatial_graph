@@ -11,3 +11,8 @@ build
 dist
 .vscode
 docs/_build/
+coverage.xml
+site
+
+# remove me to enforce synchrony across development environments
+uv.lock

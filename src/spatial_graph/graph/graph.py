@@ -2,26 +2,32 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Generic, Iterator, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
 
 import numpy as np
 import witty
 from Cheetah.Template import Template
 
-from ..dtypes import DType
+from spatial_graph.dtypes import DType
 
 if TYPE_CHECKING:
     import numbers
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
+
     from typing_extensions import Self
 
 # Set platform-specific compile arguments
 if sys.platform == "win32":
     # Use /O2 for optimization and /std:c++20 for C++20
-    EXTRA_COMPILE_ARGS = ["/O2", "/std:c++20"]
+    EXTRA_COMPILE_ARGS = ["/O2", "/std:c++20", "/wd4101"]
 else:
     # -O3 for optimization and -std=c++20 for C++20
-    EXTRA_COMPILE_ARGS = ["-O3", "-std=c++20"]
+    EXTRA_COMPILE_ARGS = [
+        "-O3",
+        "-std=c++20",
+        "-Wno-unused-variable",
+        "-Wno-unreachable-code",
+    ]
 
 NT = TypeVar("NT")
 

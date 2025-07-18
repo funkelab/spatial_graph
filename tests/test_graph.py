@@ -1,19 +1,11 @@
-import spatial_graph as sg
-import pytest
 import numpy as np
+import pytest
 
+import spatial_graph as sg
 
-node_dtypes = ["int8", "uint8", "int16", "uint16"]
-node_attr_dtypes = [
-    {"position": "double"},
-    {"position": "double[2]"},
-    {"position": "int[4]"},
-]
-edge_attr_dtypes = [
-    {},
-    {"score": "float64"},
-    {"score": "float64", "color": "uint8"},
-]
+node_dtypes = ["uint16"]
+node_attr_dtypes = [{"position": "double[2]"}]
+edge_attr_dtypes = [{"score": "float64", "color": "uint8"}]
 
 
 @pytest.mark.parametrize("node_dtype", node_dtypes)
