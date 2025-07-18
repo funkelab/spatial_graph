@@ -5,7 +5,6 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "vcs"
 
-
 [project]
 name = "spatial-graph"
 dynamic = ["version"]

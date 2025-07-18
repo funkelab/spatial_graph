@@ -93,3 +93,15 @@ jobs:
         with:
           generate_release_notes: true
           files: "./dist/*"
+
+  docker-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and test Docker image
+        run: |
+          docker build -t spatial_graph .
+          docker run --rm spatial_graph
