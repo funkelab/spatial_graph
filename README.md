@@ -149,3 +149,14 @@ git push upstream --follow-tags
 ```
 
 This will trigger the CI workflow, which will build the package and upload it to PyPI.
+
+### Testing in a conda environment
+
+To simulate a naive user environment, with *no* assumptions made about the
+availability of a C/C++ compiler, you can run the included Dockerfile
+(where the key part of the conda env is the `compilers` package):
+
+```bash
+docker build -t spatial_graph .
+docker run --rm spatial_graph
+```
