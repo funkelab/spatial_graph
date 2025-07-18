@@ -59,7 +59,7 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: uv run pytest -W ignore --codspeed -v --color=yes
+          run: uv run pytest -W ignore --codspeed -v --color=yes --codspeed-warmup-time 2
 
   deploy:
     name: Deploy
