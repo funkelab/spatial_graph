@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           enable-cache: true
 
       - name: install
