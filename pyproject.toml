@@ -84,3 +84,20 @@ pretty = true
 [tool.pytest.ini_options]
 addopts = "-v --color=yes"
 filterwarnings = ["error", "ignore:'cgi' is deprecated"]
+
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "@overload",
+  "except ImportError",
+  "raise AssertionError",
+  "\\.\\.\\.",
+  "if __name__ == .__main__.:",
+  "raise NotImplementedError",
+]
+
+[tool.coverage.run]
+source = ['spatial_graph']

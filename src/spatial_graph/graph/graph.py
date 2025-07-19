@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 # Set platform-specific compile arguments
-if sys.platform == "win32":
+if sys.platform == "win32":  # pragma: no cover
     # Use /O2 for optimization and /std:c++20 for C++20
     EXTRA_COMPILE_ARGS = ["/O2", "/std:c++20", "/wd4101"]
 else:
@@ -43,6 +43,10 @@ def _build_wrapper(
         node_attr_dtypes = {}
     if edge_attr_dtypes is None:
         edge_attr_dtypes = {}
+    if not all(str.isidentifier(name) for name in node_attr_dtypes):
+        raise ValueError("Node attribute names must be valid identifiers")
+    if not all(str.isidentifier(name) for name in edge_attr_dtypes):
+        raise ValueError("Edge attribute names must be valid identifiers")
 
     wrapper_template = Template(
         file=str(SRC_DIR / "wrapper_template.pyx"),
@@ -253,8 +257,10 @@ class EdgeAttrsView:
                     len(edges)
                     # case 2 and 3
                     edges = np.array(edges, dtype=graph.node_dtype)
-                except Exception:
-                    raise RuntimeError(f"Can not handle edges type {type(edges)}")
+                except Exception as e:  # pragma: no cover
+                    raise RuntimeError(
+                        f"Can not handle edges type {type(edges)}"
+                    ) from e
 
         if isinstance(edges, np.ndarray):
             if len(edges) == 0:
