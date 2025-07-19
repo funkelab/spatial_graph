@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from spatial_graph import SpatialGraph
+from spatial_graph.spatial_graph import SpatialDiGraph
 
 # either run this file directly or with pytest --codspeed
 if all(x not in {"--codspeed", "tests/test_bench.py"} for x in sys.argv):
@@ -26,13 +27,13 @@ def _make_graph(
     if edge_attr_dtypes is None:
         edge_attr_dtypes = {"score": "float32"}
 
-    graph = SpatialGraph(
+    cls = SpatialGraph if not directed else SpatialDiGraph
+    graph = cls(
         ndims=ndims,
         node_dtype=node_dtype,
         node_attr_dtypes=node_attr_dtypes,
         edge_attr_dtypes=edge_attr_dtypes,
         position_attr="position",
-        directed=directed,
     )
     nodes = np.arange(n_nodes, dtype="uint64")
     positions = np.random.random((n_nodes, ndims))

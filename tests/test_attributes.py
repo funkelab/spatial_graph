@@ -33,15 +33,14 @@ def test_node_access():
     graph.node_attrs[1].position
 
 
-@pytest.mark.parametrize("directed", [True, False])
-def test_edge_access(directed):
-    graph = sg.SpatialGraph(
+@pytest.mark.parametrize("cls", [sg.SpatialGraph, sg.SpatialDiGraph])
+def test_edge_access(cls):
+    graph = cls(
         ndims=3,
         node_dtype="uint64",
         node_attr_dtypes={"position": "double[3]"},
         edge_attr_dtypes={"score": "double"},
         position_attr="position",
-        directed=directed,
     )
     graph.add_node(1, position=np.array([1.0, 1.0, 1.0]))
     graph.add_node(2, position=np.array([2.0, 2.0, 2.0]))

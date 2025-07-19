@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import sys
+import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
 import witty
@@ -13,7 +14,9 @@ from spatial_graph.dtypes import DType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-    from .cgraph import CGraph, DirectedCGraph, UnDirectedCGraph
+    from typing_extensions import Literal, Self
+
+    from .cgraph import CDiGraph, CGraph, CGraphBase
 
 
 # Set platform-specific compile arguments
@@ -69,20 +72,20 @@ def _compile_graph(
     node_attr_dtypes: Mapping[str, str] | None = None,
     edge_attr_dtypes: Mapping[str, str] | None = None,
     directed: Literal[True] = ...,
-) -> type[DirectedCGraph]: ...
+) -> type[CDiGraph]: ...
 @overload
 def _compile_graph(
     node_dtype: str,
     node_attr_dtypes: Mapping[str, str] | None = None,
     edge_attr_dtypes: Mapping[str, str] | None = None,
     directed: bool = ...,
-) -> type[UnDirectedCGraph]: ...
+) -> type[CGraph]: ...
 def _compile_graph(
     node_dtype: str,
     node_attr_dtypes: Mapping[str, str] | None = None,
     edge_attr_dtypes: Mapping[str, str] | None = None,
     directed: bool = False,
-) -> type[CGraph]:
+) -> type[CGraphBase]:
     wrapper_template = _build_wrapper(
         node_dtype=node_dtype,
         node_attr_dtypes=node_attr_dtypes,
@@ -101,35 +104,57 @@ def _compile_graph(
 
 
 if TYPE_CHECKING:
-    from .cgraph import CGraph
 
-    class _GraphBase(CGraph):
-        node_attrs: NodeAttrs
-        edge_attrs: EdgeAttrs
-        node_dtype: str
-        node_attr_dtypes: Mapping[str, str]
-        edge_attr_dtypes: Mapping[str, str]
-        directed: bool
-
-        def __init__(
-            self,
-            node_dtype: str,
-            node_attr_dtypes: Mapping[str, str] | None = None,
-            edge_attr_dtypes: Mapping[str, str] | None = None,
-            directed: bool = False,
-        ): ...
-
-    class DirectedGraph(_GraphBase, DirectedCGraph):
-        """Base class for directed graph instances."""
-
-    class UnDirectedGraph(_GraphBase, UnDirectedCGraph):
+    class GraphBase(CGraph):
         """Base class for undirected graph instances."""
+
+    class Graph(GraphBase, CGraph):
+        """Base class for undirected graph instances."""
+
+    class DiGraph(GraphBase, CDiGraph):
+        """Base class for directed graph instances."""
 
 
 else:
 
-    class _GraphBase:
+    class GraphBase:
         """Base class for compiled graph instances."""
+
+        def __new__(
+            cls,
+            node_dtype: str,
+            node_attr_dtypes: Mapping[str, str] | None = None,
+            edge_attr_dtypes: Mapping[str, str] | None = None,
+            directed: bool | None = None,
+            *args: Any,
+            **kwargs: Any,
+        ) -> Self:
+            if directed is not None:
+                warnings.warn(
+                    "The 'directed' argument is deprecated and will be removed in "
+                    "future versions. Use the 'DiGraph' class for directed graphs.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+            else:
+                directed = issubclass(cls, DiGraph)
+
+            print("Compiling graph with directed =", directed)
+            # dynamically compile a specialized C++ implementation of the graph
+            # tailored to the user's specific type requirements.
+            CGraph = _compile_graph(
+                node_dtype=node_dtype,
+                node_attr_dtypes=node_attr_dtypes,
+                edge_attr_dtypes=edge_attr_dtypes,
+                directed=directed,
+            )
+
+            # create a new class that inherits from both the base class
+            # and the compiled c++ implementation
+            GraphType = type(cls.__name__, (cls, CGraph), {})
+
+            # create and initialize the instance
+            return CGraph.__new__(GraphType)
 
         def __init__(
             self,
@@ -147,59 +172,11 @@ else:
             self.node_attrs = NodeAttrs(self)
             self.edge_attrs = EdgeAttrs(self)
 
+    class Graph(GraphBase):
+        """Base class for undirected graph instances."""
 
-@overload
-def Graph(
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    directed: Literal[True] = ...,
-) -> DirectedGraph: ...
-@overload
-def Graph(
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    directed: bool = ...,
-) -> UnDirectedGraph: ...
-def Graph(
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    directed: bool = False,
-) -> DirectedGraph | UnDirectedGraph:
-    """Factory function to create a specialized graph instance.
-
-    Args:
-        node_dtype: Data type for node identifiers
-        node_attr_dtypes: Mapping of node attribute names to their data types
-        edge_attr_dtypes: Mapping of edge attribute names to their data types
-        directed: Whether the graph should be directed
-
-    Returns:
-        A compiled graph instance (DirectedCGraph or UnDirectedCGraph)
-    """
-    # dynamically compile a specialized C++ implementation of the graph
-    # tailored to the user's specific type requirements.
-    CGraph = _compile_graph(
-        node_dtype=node_dtype,
-        node_attr_dtypes=node_attr_dtypes,
-        edge_attr_dtypes=edge_attr_dtypes,
-        directed=directed,
-    )
-
-    # create a new class that inherits from both the base class
-    # and the compiled c++ implementation
-    GraphType = type("Graph", (_GraphBase, CGraph), {})
-
-    # create and initialize the instance
-    from typing import Any
-
-    instance: Any = CGraph.__new__(GraphType)
-    _GraphBase.__init__(
-        instance, node_dtype, node_attr_dtypes, edge_attr_dtypes, directed
-    )
-    return instance
+    class DiGraph(GraphBase):
+        """Base class for directed graph instances."""
 
 
 class NodeAttrsView:
@@ -254,10 +231,10 @@ class NodeAttrsView:
 
 
 class EdgeAttrsView:
-    graph: _GraphBase
+    graph: GraphBase
     edges: np.ndarray | tuple[float, float] | None
 
-    def __init__(self, graph: _GraphBase, edges: np.ndarray | Iterable | None) -> None:
+    def __init__(self, graph: GraphBase, edges: np.ndarray | Iterable | None) -> None:
         super().__setattr__("graph", graph)
         for name in graph.edge_attr_dtypes:
             super().__setattr__(
@@ -343,7 +320,7 @@ class EdgeAttrsView:
 
 
 class NodeAttrs(NodeAttrsView):
-    def __init__(self, graph: _GraphBase) -> None:
+    def __init__(self, graph: GraphBase) -> None:
         super().__init__(graph, nodes=None)
 
     def __getitem__(self, nodes) -> NodeAttrsView:
@@ -351,7 +328,7 @@ class NodeAttrs(NodeAttrsView):
 
 
 class EdgeAttrs(EdgeAttrsView):
-    def __init__(self, graph: _GraphBase) -> None:
+    def __init__(self, graph: GraphBase) -> None:
         super().__init__(graph, edges=None)
 
     def __getitem__(self, edges) -> EdgeAttrsView:

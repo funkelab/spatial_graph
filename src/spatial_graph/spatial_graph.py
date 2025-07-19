@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast, overload
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import numpy as np
 
 from .dtypes import DType
-from .graph.graph import Graph, _GraphBase
+from .graph.graph import DiGraph, Graph, GraphBase
 from .rtree import LineRTree, PointRTree
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from .graph.cgraph import DirectedCGraph, UnDirectedCGraph
 
-
-class _SpatialGraphBase(_GraphBase):
+class SpatialGraphBase(GraphBase):
     edge_inclusion_values: ClassVar[list[str]] = ["incident", "leaving", "entering"]
 
     def __init__(
@@ -110,70 +108,9 @@ class _SpatialGraphBase(_GraphBase):
         raise RuntimeError(f"position attribute '{self.position_attr}' not given")
 
 
-if TYPE_CHECKING:
-
-    class DirectedSpatialGraph(_SpatialGraphBase, DirectedCGraph):
-        """A directed spatial graph with spatial indexing capabilities."""
-
-    class UnDirectedSpatialGraph(_SpatialGraphBase, UnDirectedCGraph):
-        """An undirected spatial graph with spatial indexing capabilities."""
+class SpatialGraph(SpatialGraphBase, Graph):
+    """Base class for undirected spatial graph instances."""
 
 
-@overload
-def SpatialGraph(
-    ndims: int,
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    position_attr: str = "position",
-    directed: Literal[True] = ...,
-) -> DirectedSpatialGraph: ...
-@overload
-def SpatialGraph(
-    ndims: int,
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    position_attr: str = "position",
-    directed: bool = ...,
-) -> UnDirectedSpatialGraph: ...
-def SpatialGraph(
-    ndims: int,
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    position_attr: str = "position",
-    directed: bool = False,
-) -> DirectedSpatialGraph | UnDirectedSpatialGraph:
-    """Factory function to create a specialized spatial graph instance.
-
-    Args:
-        ndims: Number of spatial dimensions
-        node_dtype: Data type for node identifiers
-        node_attr_dtypes: Mapping of node attribute names to their data types
-        edge_attr_dtypes: Mapping of edge attribute names to their data types
-        position_attr: Name of the position attribute in node_attr_dtypes
-        directed: Whether the graph should be directed
-
-    Returns:
-        A compiled spatial graph instance with spatial indexing capabilities.
-        Returns DirectedCGraph when directed=True, UnDirectedCGraph when directed=False.
-    """
-    # Create the underlying graph
-    graph = Graph(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
-
-    # Create a new class that adds spatial functionality
-    SpatialGraphType = type("SpatialGraph", (_SpatialGraphBase, type(graph)), {})
-
-    # Create the instance using the graph's allocation but with spatial initialization
-    instance: _SpatialGraphBase = type(graph).__new__(SpatialGraphType)
-    _SpatialGraphBase.__init__(
-        instance,
-        ndims,
-        node_dtype,
-        node_attr_dtypes,
-        edge_attr_dtypes,
-        position_attr,
-        directed,
-    )
-    return instance  # type: ignore[return-value]
+class SpatialDiGraph(SpatialGraphBase, DiGraph):
+    """Base class for directed spatial graph instances."""

@@ -30,7 +30,6 @@ graph = SpatialGraph(
     node_attr_dtypes={"position": "double[3]"},
     edge_attr_dtypes={"score": "float32"},
     position_attr="position",
-    directed=False,
 )
 nodes = np.arange(100_000, dtype="uint64")
 graph.add_nodes(nodes, position=np.random.random((100_000, 3)))
