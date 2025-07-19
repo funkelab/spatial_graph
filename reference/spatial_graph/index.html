@@ -461,6 +461,75 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_graph
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" create_graph">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(node_dtype)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;node_dtype
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(ndims)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;ndims
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(node_attr_dtypes)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;node_attr_dtypes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(edge_attr_dtypes)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;edge_attr_dtypes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(position_attr)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;position_attr
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(directed)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;directed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -865,6 +934,75 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_graph
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" create_graph">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(node_dtype)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;node_dtype
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(ndims)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;ndims
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(node_attr_dtypes)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;node_attr_dtypes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(edge_attr_dtypes)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;edge_attr_dtypes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(position_attr)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;position_attr
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial_graph.create_graph(directed)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;directed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -980,6 +1118,18 @@
     </ul>
 
 
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            create_graph (spatial_graph.create_graph)" href="#spatial_graph.create_graph">create_graph</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Convenience factory function to create a graph instance.</p>
+            </div>
+          </li>
+    </ul>
 
 
 
@@ -1511,7 +1661,7 @@ ends (`ndarray`, shape `(n, d)`):
 
 </h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">SpatialDiGraph</span><span class="p">(</span>
-    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1562,7 +1712,7 @@ ends (`ndarray`, shape `(n, d)`):
 <span class="normal">38</span>
 <span class="normal">39</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1615,7 +1765,7 @@ ends (`ndarray`, shape `(n, d)`):
 
 </h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">SpatialGraph</span><span class="p">(</span>
-    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1666,7 +1816,7 @@ ends (`ndarray`, shape `(n, d)`):
 <span class="normal">38</span>
 <span class="normal">39</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1709,6 +1859,243 @@ ends (`ndarray`, shape `(n, d)`):
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="spatial_graph.create_graph" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">create_graph</span>
+
+
+</h2>
+          <div class="doc-overloads">
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">create_graph</span><span class="p">(</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SpatialGraph</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">create_graph</span><span class="p">(</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SpatialDiGraph</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">create_graph</span><span class="p">(</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Graph</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">create_graph</span><span class="p">(</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiGraph</span>
+</code></pre></div>          </div>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">create_graph</span><span class="p">(</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Graph</span> <span class="o">|</span> <span class="n">DiGraph</span> <span class="o">|</span> <span class="n">SpatialGraph</span> <span class="o">|</span> <span class="n">SpatialDiGraph</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convenience factory function to create a graph instance.</p>
+<p>This will create the appropriate graph type based on the parameters provided.
+If <code>ndims</code> is specified, it will create a spatial graph; otherwise, it will create
+a non-spatial graph. If <code>directed</code> is True, it will create a directed graph;
+otherwise, it will create an undirected graph.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+<h3 id="spatial_graph.create_graph(node_dtype)" class="doc doc-heading doc-heading-parameter">              <b><code>node_dtype</code></b>
+</h3>              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The data type of the nodes in the graph.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+<h3 id="spatial_graph.create_graph(ndims)" class="doc doc-heading doc-heading-parameter">              <b><code>ndims</code></b>
+</h3>              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> or None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The number of dimensions for spatial graphs. If None, the graph is non-spatial.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+<h3 id="spatial_graph.create_graph(node_attr_dtypes)" class="doc doc-heading doc-heading-parameter">              <b><code>node_attr_dtypes</code></b>
+</h3>              (<code><a class="autorefs autorefs-external" title="collections.abc.Mapping" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>A mapping of node attribute names to their data types.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+<h3 id="spatial_graph.create_graph(edge_attr_dtypes)" class="doc doc-heading doc-heading-parameter">              <b><code>edge_attr_dtypes</code></b>
+</h3>              (<code><a class="autorefs autorefs-external" title="collections.abc.Mapping" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>A mapping of edge attribute names to their data types.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+<h3 id="spatial_graph.create_graph(position_attr)" class="doc doc-heading doc-heading-parameter">              <b><code>position_attr</code></b>
+</h3>              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The name of the attribute that holds the position of nodes in spatial graphs.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+<h3 id="spatial_graph.create_graph(directed)" class="doc doc-heading doc-heading-parameter">              <b><code>directed</code></b>
+</h3>              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Whether the graph is directed or not. Defaults to False.</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="quote">
+              <summary>Source code in <code>src/spatial_graph/_util.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 49</span>
+<span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_graph</span><span class="p">(</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Graph</span> <span class="o">|</span> <span class="n">DiGraph</span> <span class="o">|</span> <span class="n">SpatialGraph</span> <span class="o">|</span> <span class="n">SpatialDiGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience factory function to create a graph instance.</span>
+
+<span class="sd">    This will create the appropriate graph type based on the parameters provided.</span>
+<span class="sd">    If `ndims` is specified, it will create a spatial graph; otherwise, it will create</span>
+<span class="sd">    a non-spatial graph. If `directed` is True, it will create a directed graph;</span>
+<span class="sd">    otherwise, it will create an undirected graph.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    node_dtype : str</span>
+<span class="sd">        The data type of the nodes in the graph.</span>
+<span class="sd">    ndims : int or None, optional</span>
+<span class="sd">        The number of dimensions for spatial graphs. If None, the graph is non-spatial.</span>
+<span class="sd">    node_attr_dtypes : Mapping[str, str], optional</span>
+<span class="sd">        A mapping of node attribute names to their data types.</span>
+<span class="sd">    edge_attr_dtypes : Mapping[str, str], optional</span>
+<span class="sd">        A mapping of edge attribute names to their data types.</span>
+<span class="sd">    position_attr : str, optional</span>
+<span class="sd">        The name of the attribute that holds the position of nodes in spatial graphs.</span>
+<span class="sd">    directed : bool, optional</span>
+<span class="sd">        Whether the graph is directed or not. Defaults to False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ndims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Spatial graph</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">SpatialDiGraph</span> <span class="k">if</span> <span class="n">directed</span> <span class="k">else</span> <span class="n">SpatialGraph</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">ndims</span><span class="o">=</span><span class="n">ndims</span><span class="p">,</span>
+            <span class="n">node_dtype</span><span class="o">=</span><span class="n">node_dtype</span><span class="p">,</span>
+            <span class="n">node_attr_dtypes</span><span class="o">=</span><span class="n">node_attr_dtypes</span><span class="p">,</span>
+            <span class="n">edge_attr_dtypes</span><span class="o">=</span><span class="n">edge_attr_dtypes</span><span class="p">,</span>
+            <span class="n">position_attr</span><span class="o">=</span><span class="n">position_attr</span> <span class="ow">or</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">position_attr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;&#39;position_attr&#39; is ignored when &#39;ndims&#39; is not specified.&quot;</span><span class="p">,</span>
+                <span class="ne">UserWarning</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">cls_</span> <span class="o">=</span> <span class="n">DiGraph</span> <span class="k">if</span> <span class="n">directed</span> <span class="k">else</span> <span class="n">Graph</span>
+        <span class="k">return</span> <span class="n">cls_</span><span class="p">(</span>
+            <span class="n">node_dtype</span><span class="o">=</span><span class="n">node_dtype</span><span class="p">,</span>
+            <span class="n">node_attr_dtypes</span><span class="o">=</span><span class="n">node_attr_dtypes</span><span class="p">,</span>
+            <span class="n">edge_attr_dtypes</span><span class="o">=</span><span class="n">edge_attr_dtypes</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
 
 
 
