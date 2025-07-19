@@ -7,6 +7,10 @@ class CGraph:
     def add_node(self, node: Any, *data: Any, **kwargs: Any) -> int:
         """Add a single node to the graph.
 
+        The node attributes provided via *data and **kwargs must match the
+        data types and names specified in `node_attr_dtypes` when the graph
+        was created.
+
         Parameters
         ----------
         node : Any
@@ -22,15 +26,13 @@ class CGraph:
         -------
         int
             Number of nodes added (1 if successful, 0 if node already exists).
-
-        Notes
-        -----
-        The node attributes provided via *data and **kwargs must match the
-        data types and names specified in `node_attr_dtypes` when the graph
-        was created.
         """
     def add_nodes(self, nodes: np.ndarray, *data: Any, **kwargs: Any) -> int:
         """Add multiple nodes to the graph.
+
+        Node attributes provided via *data and **kwargs must match the
+        data types and names specified in `node_attr_dtypes`. Each attribute
+        array must have the same length as the `nodes` array.
 
         Parameters
         ----------
@@ -49,15 +51,13 @@ class CGraph:
         -------
         int
             Number of nodes successfully added.
-
-        Notes
-        -----
-        Node attributes provided via *data and **kwargs must match the
-        data types and names specified in `node_attr_dtypes`. Each attribute
-        array must have the same length as the `nodes` array.
         """
     def add_edge(self, edge: np.ndarray, *args: Any, **kwargs: Any) -> int:
         """Add an edge to the graph.
+
+        The edge attributes provided via *args and **kwargs must match the
+        data types and names specified in `edge_attr_dtypes` when the graph
+        was created.
 
         Parameters
         ----------
@@ -74,18 +74,16 @@ class CGraph:
         -------
         int
             Number of edges added (1 if successful, 0 if edge already exists).
-
-        Notes
-        -----
-        The edge attributes provided via *args and **kwargs must match the
-        data types and names specified in `edge_attr_dtypes` when the graph
-        was created.
         """
 
     def add_edges(
         self, edges: np.ndarray, *args: np.ndarray, **kwargs: np.ndarray
     ) -> int:
         """Add multiple edges to the graph.
+
+        Edge attributes provided via *args and **kwargs must match the
+        data types and names specified in `edge_attr_dtypes`. Each attribute
+        array must have the same length as the number of edges.
 
         Parameters
         ----------
@@ -105,54 +103,45 @@ class CGraph:
         -------
         int
             Number of edges successfully added.
-
-        Notes
-        -----
-        Edge attributes provided via *args and **kwargs must match the
-        data types and names specified in `edge_attr_dtypes`. Each attribute
-        array must have the same length as the number of edges.
         """
 
     def nodes(self) -> np.ndarray:
         """Get all node IDs in the graph.
+
+        The returned array is a copy and modifications will not affect
+        the graph structure.
 
         Returns
         -------
         np.ndarray
             Array containing all node identifiers in the graph, ordered
             by insertion order (earliest added first).
-
-        Notes
-        -----
-        The returned array is a copy and modifications will not affect
-        the graph structure.
         """
     def remove_node(self, node: Any) -> None:
         """Remove a single node from the graph.
+
+        Removing a node will also remove all edges incident to that node.
 
         Parameters
         ----------
         node : Any
             The node identifier to remove from the graph.
-
-        Notes
-        -----
-        Removing a node will also remove all edges incident to that node.
         """
     def remove_nodes(self, nodes: np.ndarray) -> None:
         """Remove multiple nodes from the graph.
+
+        Removing nodes will also remove all edges incident to those nodes.
 
         Parameters
         ----------
         nodes : np.ndarray
             Array of node identifiers to remove from the graph.
-
-        Notes
-        -----
-        Removing nodes will also remove all edges incident to those nodes.
         """
     def nodes_data(self, nodes: np.ndarray | None = None) -> Iterator[tuple[Any, Any]]:
         """Iterate over nodes and their associated data.
+
+        The node_data object provides access to node attributes as defined
+        by the `node_attr_dtypes` when the graph was created.
 
         Parameters
         ----------
@@ -165,14 +154,13 @@ class CGraph:
         tuple[Any, Any]
             Tuples of (node_id, node_data) where node_data is a view object
             providing access to the node's attributes.
-
-        Notes
-        -----
-        The node_data object provides access to node attributes as defined
-        by the `node_attr_dtypes` when the graph was created.
         """
     def edges_data(self, us: np.ndarray, vs: np.ndarray) -> Iterator:
         """Iterate over edge data for specified edges.
+
+        The arrays `us` and `vs` must have the same length. The edge data
+        objects provide access to edge attributes as defined by the
+        `edge_attr_dtypes` when the graph was created.
 
         Parameters
         ----------
@@ -186,12 +174,6 @@ class CGraph:
         Any
             Edge data view objects providing access to edge attributes
             for each edge (us[i], vs[i]).
-
-        Notes
-        -----
-        The arrays `us` and `vs` must have the same length. The edge data
-        objects provide access to edge attributes as defined by the
-        `edge_attr_dtypes` when the graph was created.
         """
     def num_edges(self) -> int:
         """Get the total number of edges in the graph.
@@ -214,6 +196,9 @@ class UnDirectedCGraph(CGraph):
     def count_neighbors(self, nodes: np.ndarray) -> int:
         """Count the number of neighbors for each node.
 
+        For undirected graphs, this counts all adjacent nodes regardless
+        of edge direction since edges are bidirectional.
+
         Parameters
         ----------
         nodes : np.ndarray
@@ -223,14 +208,12 @@ class UnDirectedCGraph(CGraph):
         -------
         int
             Array of neighbor counts for each node in the input array.
-
-        Notes
-        -----
-        For undirected graphs, this counts all adjacent nodes regardless
-        of edge direction since edges are bidirectional.
         """
     def edges(self, node: Any = None, data: bool = False) -> Iterator:
         """Iterate over edges in the graph.
+
+        For undirected graphs, each edge is yielded only once with nodes
+        ordered such that node1 < node2 to avoid duplicates.
 
         Parameters
         ----------
@@ -247,14 +230,13 @@ class UnDirectedCGraph(CGraph):
             If data=False: tuples of (node1, node2) representing edges.
             If data=True: tuples of ((node1, node2), edge_data) where
             edge_data provides access to edge attributes.
-
-        Notes
-        -----
-        For undirected graphs, each edge is yielded only once with nodes
-        ordered such that node1 < node2 to avoid duplicates.
         """
     def edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray:
         """Get all edges incident to the specified nodes.
+
+        This method provides fast access to edges incident to an array
+        of nodes. Note that edges between nodes in the input array will
+        be reported multiple times (once for each incident node).
 
         Parameters
         ----------
@@ -270,9 +252,7 @@ class UnDirectedCGraph(CGraph):
 
         Notes
         -----
-        This method provides fast access to edges incident to an array
-        of nodes. Note that edges between nodes in the input array will
-        be reported multiple times (once for each incident node).
+
         """
 
 class DirectedCGraph(CGraph):
