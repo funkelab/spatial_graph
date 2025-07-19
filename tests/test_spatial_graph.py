@@ -2,24 +2,26 @@ import numpy as np
 import pytest
 
 import spatial_graph as sg
+from spatial_graph._util import create_graph
 
 node_dtypes = ["uint16"]
 node_attr_dtypes = [{"position": "double[4]"}]
 edge_attr_dtypes = [{"score": "float64", "color": "uint8"}]
 
 
-@pytest.mark.parametrize("node_dtype", node_dtypes)
-@pytest.mark.parametrize("node_attr_dtypes", node_attr_dtypes)
-@pytest.mark.parametrize("edge_attr_dtypes", edge_attr_dtypes)
-@pytest.mark.parametrize("cls", [sg.SpatialGraph, sg.SpatialDiGraph])
-def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, cls):
-    cls(
-        ndims=4,
-        node_dtype=node_dtype,
-        node_attr_dtypes=node_attr_dtypes,
-        edge_attr_dtypes=edge_attr_dtypes,
-        position_attr="position",
+@pytest.mark.parametrize("ndims", [None, 4])
+@pytest.mark.parametrize("directed", [True, False])
+def test_util_construction(ndims: int, directed: bool) -> None:
+    graph = create_graph(
+        ndims=ndims,
+        node_dtype="uint16",
+        node_attr_dtypes={"position": "double[4]"},
+        edge_attr_dtypes={"score": "float64", "color": "uint8"},
+        directed=directed,
     )
+    assert isinstance(graph, sg.GraphBase)
+    assert isinstance(graph, sg.DiGraph) == directed
+    assert isinstance(graph, sg.SpatialGraphBase) == (ndims is not None)
 
 
 def test_roi_query():

@@ -17,7 +17,7 @@ class SpatialGraphBase(GraphBase):
 
     def __init__(
         self,
-        ndims,
+        ndims: int,
         node_dtype: str,
         node_attr_dtypes: Mapping[str, str] | None = None,
         edge_attr_dtypes: Mapping[str, str] | None = None,
