@@ -11,7 +11,7 @@ from Cheetah.Template import Template
 from spatial_graph.dtypes import DType
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
 
     from .cgraph import CGraph, DirectedCGraph, UnDirectedCGraph
 
@@ -103,8 +103,8 @@ if TYPE_CHECKING:
         node_attrs: NodeAttrs
         edge_attrs: EdgeAttrs
         node_dtype: str
-        node_attr_dtypes: Mapping[str, str] | None
-        edge_attr_dtypes: Mapping[str, str] | None
+        node_attr_dtypes: Mapping[str, str]
+        edge_attr_dtypes: Mapping[str, str]
         directed: bool
 
         def __init__(
@@ -134,14 +134,10 @@ else:
             edge_attr_dtypes: Mapping[str, str] | None = None,
             directed: bool = False,
         ):
-            if node_attr_dtypes is None:
-                node_attr_dtypes = {}
-            if edge_attr_dtypes is None:
-                edge_attr_dtypes = {}
             super().__init__()
             self.node_dtype = node_dtype
-            self.node_attr_dtypes = node_attr_dtypes
-            self.edge_attr_dtypes = edge_attr_dtypes
+            self.node_attr_dtypes = node_attr_dtypes or {}
+            self.edge_attr_dtypes = edge_attr_dtypes or {}
             self.directed = directed
 
             self.node_attrs = NodeAttrs(self)
@@ -236,7 +232,7 @@ class NodeAttrsView:
         # 3. None
         super().__setattr__("nodes", nodes)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> np.ndarray:
         if name in self.graph.node_attr_dtypes:
             return getattr(self, f"get_attr_{name}")(self.nodes)
         else:
@@ -254,9 +250,12 @@ class NodeAttrsView:
 
 
 class EdgeAttrsView:
-    def __init__(self, graph, edges):
+    graph: _GraphBase
+    edges: np.ndarray | tuple[float, float] | None
+
+    def __init__(self, graph: _GraphBase, edges: np.ndarray | Iterable | None) -> None:
         super().__setattr__("graph", graph)
-        for name in graph.edge_attr_dtypes.keys():
+        for name in graph.edge_attr_dtypes:
             super().__setattr__(
                 f"get_attr_{name}", getattr(graph, f"get_edges_data_{name}")
             )
@@ -288,7 +287,7 @@ class EdgeAttrsView:
                 # edges should be an iteratable
                 try:
                     # does it have a length?
-                    len(edges)
+                    len(edges)  # type: ignore
                     # case 2 and 3
                     edges = np.array(edges, dtype=graph.node_dtype)
                 except Exception:
@@ -297,8 +296,8 @@ class EdgeAttrsView:
         if isinstance(edges, np.ndarray):
             if len(edges) == 0:
                 edges = edges.reshape((0, 2))
-            assert edges.shape[1] == 2, "Edge arrays should have shape (n, 2)"
-            edges = np.ascontiguousarray(edges.T)
+            assert edges.shape[1] == 2, "Edge arrays should have shape (n, 2)"  # type: ignore
+            edges = np.ascontiguousarray(edges.T)  # type: ignore
         elif isinstance(edges, tuple):
             # a single edge
             for name in graph.edge_attr_dtypes.keys():
@@ -315,7 +314,7 @@ class EdgeAttrsView:
         # 3. None
         super().__setattr__("edges", edges)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> np.ndarray:
         if name in self.graph.edge_attr_dtypes:
             if self.edges is not None:
                 return getattr(self, f"get_attr_{name}")(self.edges[0], self.edges[1])
@@ -338,16 +337,16 @@ class EdgeAttrsView:
 
 
 class NodeAttrs(NodeAttrsView):
-    def __init__(self, graph):
+    def __init__(self, graph: _GraphBase) -> None:
         super().__init__(graph, nodes=None)
 
-    def __getitem__(self, nodes):
+    def __getitem__(self, nodes) -> NodeAttrsView:
         return NodeAttrsView(self.graph, nodes)
 
 
 class EdgeAttrs(EdgeAttrsView):
-    def __init__(self, graph):
+    def __init__(self, graph: _GraphBase) -> None:
         super().__init__(graph, edges=None)
 
-    def __getitem__(self, edges):
+    def __getitem__(self, edges) -> EdgeAttrsView:
         return EdgeAttrsView(self.graph, edges)
