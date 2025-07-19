@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Literal, overload
 import numpy as np
 import witty
 from Cheetah.Template import Template
-from typing_extensions import Self
 
 from spatial_graph.dtypes import DType
 
@@ -98,14 +97,15 @@ def _compile_graph(
 
 
 if TYPE_CHECKING:
+    from .cgraph import CGraph
 
-    class Graph(CGraph):
+    class _GraphBase(CGraph):
+        node_attrs: NodeAttrs
+        edge_attrs: EdgeAttrs
         node_dtype: str
         node_attr_dtypes: Mapping[str, str] | None
         edge_attr_dtypes: Mapping[str, str] | None
         directed: bool
-        node_attrs: NodeAttrs
-        edge_attrs: EdgeAttrs
 
         def __init__(
             self,
@@ -114,34 +114,18 @@ if TYPE_CHECKING:
             edge_attr_dtypes: Mapping[str, str] | None = None,
             directed: bool = False,
         ): ...
+
+    class DirectedGraph(_GraphBase, DirectedCGraph):
+        """Base class for directed graph instances."""
+
+    class UnDirectedGraph(_GraphBase, UnDirectedCGraph):
+        """Base class for undirected graph instances."""
+
+
 else:
 
-    class Graph:
-        def __new__(
-            cls,
-            node_dtype: str,
-            node_attr_dtypes: Mapping[str, str] | None = None,
-            edge_attr_dtypes: Mapping[str, str] | None = None,
-            directed: bool = False,
-            *args,
-            **kwargs,
-        ) -> Self:
-            # dynamically compile a specialized C++ implementation of the graph
-            # tailored to the user's specific type requirements.
-            CGraph = _compile_graph(
-                node_dtype=node_dtype,
-                node_attr_dtypes=node_attr_dtypes,
-                edge_attr_dtypes=edge_attr_dtypes,
-                directed=directed,
-            )
-            # create a new class that inherits from both this class
-            # and the compiled c++ implementation `wrapper.Graph`
-            GraphType = type(cls.__name__, (cls, CGraph), {})
-            # call the __new__ method of the native C++ class, but pass the dynamically
-            # created class as the type.  This ensures the object will be an instance
-            # of the dynamically created class, but using the C++ allocation logic and
-            # initialization code.
-            return CGraph.__new__(GraphType)
+    class _GraphBase:
+        """Base class for compiled graph instances."""
 
         def __init__(
             self,
@@ -162,6 +146,60 @@ else:
 
             self.node_attrs = NodeAttrs(self)
             self.edge_attrs = EdgeAttrs(self)
+
+
+@overload
+def Graph(
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+    directed: Literal[True] = ...,
+) -> DirectedGraph: ...
+@overload
+def Graph(
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+    directed: bool = ...,
+) -> UnDirectedGraph: ...
+def Graph(
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+    directed: bool = False,
+) -> DirectedGraph | UnDirectedGraph:
+    """Factory function to create a specialized graph instance.
+
+    Args:
+        node_dtype: Data type for node identifiers
+        node_attr_dtypes: Mapping of node attribute names to their data types
+        edge_attr_dtypes: Mapping of edge attribute names to their data types
+        directed: Whether the graph should be directed
+
+    Returns:
+        A compiled graph instance (DirectedCGraph or UnDirectedCGraph)
+    """
+    # dynamically compile a specialized C++ implementation of the graph
+    # tailored to the user's specific type requirements.
+    CGraph = _compile_graph(
+        node_dtype=node_dtype,
+        node_attr_dtypes=node_attr_dtypes,
+        edge_attr_dtypes=edge_attr_dtypes,
+        directed=directed,
+    )
+
+    # create a new class that inherits from both the base class
+    # and the compiled c++ implementation
+    GraphType = type("Graph", (_GraphBase, CGraph), {})
+
+    # create and initialize the instance
+    from typing import Any
+
+    instance: Any = CGraph.__new__(GraphType)
+    _GraphBase.__init__(
+        instance, node_dtype, node_attr_dtypes, edge_attr_dtypes, directed
+    )
+    return instance
 
 
 class NodeAttrsView:
