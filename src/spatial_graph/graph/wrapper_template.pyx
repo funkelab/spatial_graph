@@ -647,7 +647,7 @@ cdef class Graph:
                 inc(it)
 
     def _num_${prefix}edges(self, NodeType[::1] nodes):
-        return np.sum(self.count_${prefix}neighbors(nodes))
+        return np.sum(self.num_${prefix}neighbors(nodes))
     %end for
 
     def __len__(self):
