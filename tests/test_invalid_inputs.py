@@ -1,4 +1,3 @@
-from turtle import pos
 import pytest
 
 import spatial_graph as sg
