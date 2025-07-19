@@ -9,7 +9,7 @@ from Cheetah.Template import Template
 from spatial_graph.dtypes import DType
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
-if sys.platform == "win32":
+if sys.platform == "win32":  # pragma: no cover
     EXTRA_COMPILE_ARGS = ["/O2"]
 else:
     EXTRA_COMPILE_ARGS = ["-O3", "-Wno-unreachable-code"]
