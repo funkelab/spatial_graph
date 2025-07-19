@@ -389,6 +389,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    spatial_graph.spatial_graph
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -400,6 +413,43 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#spatial_graph.spatial_graph.SpatialDiGraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SpatialDiGraph
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spatial_graph.spatial_graph.SpatialGraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SpatialGraph
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -671,6 +721,32 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#spatial_graph.spatial_graph.SpatialDiGraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SpatialDiGraph
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spatial_graph.spatial_graph.SpatialGraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SpatialGraph
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -704,6 +780,25 @@
 
 
 
+<p><span class="doc-section-title">Classes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            SpatialDiGraph (spatial_graph.spatial_graph.SpatialDiGraph)" href="#spatial_graph.spatial_graph.SpatialDiGraph">SpatialDiGraph</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Base class for directed spatial graph instances.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            SpatialGraph (spatial_graph.spatial_graph.SpatialGraph)" href="#spatial_graph.spatial_graph.SpatialGraph">SpatialGraph</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Base class for undirected spatial graph instances.</p>
+          </div>
+        </li>
+    </ul>
+
+
 
 
 
@@ -717,6 +812,214 @@
 
 
 
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="spatial_graph.spatial_graph.SpatialDiGraph" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">SpatialDiGraph</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">SpatialDiGraph</span><span class="p">(</span>
+    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="spatial_graph.spatial_graph.SpatialGraphBase">SpatialGraphBase</span></code>, <code><a class="autorefs autorefs-internal" title="            DiGraph (spatial_graph.graph.graph.DiGraph)" href="../graph/graph/#spatial_graph.graph.graph.DiGraph">DiGraph</a></code></p>
+
+
+        <p>Base class for directed spatial graph instances.</p>
+
+
+
+
+
+
+
+
+
+
+
+                  <details class="quote">
+                    <summary>Source code in <code>src/spatial_graph/spatial_graph.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">node_attr_dtypes</span> <span class="o">=</span> <span class="n">node_attr_dtypes</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">position_attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">node_attr_dtypes</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;position attribute </span><span class="si">{</span><span class="n">position_attr</span><span class="si">!r}</span><span class="s2"> not defined in &quot;</span>
+            <span class="s2">&quot;&#39;node_attr_dtypes&#39;&quot;</span>
+        <span class="p">)</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">node_dtype</span><span class="p">,</span> <span class="n">node_attr_dtypes</span><span class="p">,</span> <span class="n">edge_attr_dtypes</span><span class="p">,</span> <span class="n">directed</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">ndims</span> <span class="o">=</span> <span class="n">ndims</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">position_attr</span> <span class="o">=</span> <span class="n">position_attr</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">coord_dtype</span> <span class="o">=</span> <span class="n">DType</span><span class="p">(</span><span class="n">node_attr_dtypes</span><span class="p">[</span><span class="n">position_attr</span><span class="p">])</span><span class="o">.</span><span class="n">base</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_node_rtree</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">PointRTree</span><span class="p">(</span><span class="n">node_dtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_dtype</span><span class="p">,</span> <span class="n">ndims</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_edge_rtree</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">LineRTree</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">node_dtype</span><span class="si">}</span><span class="s2">[2]&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_dtype</span><span class="p">,</span> <span class="n">ndims</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="spatial_graph.spatial_graph.SpatialGraph" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">SpatialGraph</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">SpatialGraph</span><span class="p">(</span>
+    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="spatial_graph.spatial_graph.SpatialGraphBase">SpatialGraphBase</span></code>, <code><a class="autorefs autorefs-internal" title="            Graph (spatial_graph.graph.graph.Graph)" href="../graph/graph/#spatial_graph.graph.graph.Graph">Graph</a></code></p>
+
+
+        <p>Base class for undirected spatial graph instances.</p>
+
+
+
+
+
+
+
+
+
+
+
+                  <details class="quote">
+                    <summary>Source code in <code>src/spatial_graph/spatial_graph.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">ndims</span><span class="p">,</span>
+    <span class="n">node_dtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">node_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">edge_attr_dtypes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">position_attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span>
+    <span class="n">directed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">node_attr_dtypes</span> <span class="o">=</span> <span class="n">node_attr_dtypes</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">position_attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">node_attr_dtypes</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;position attribute </span><span class="si">{</span><span class="n">position_attr</span><span class="si">!r}</span><span class="s2"> not defined in &quot;</span>
+            <span class="s2">&quot;&#39;node_attr_dtypes&#39;&quot;</span>
+        <span class="p">)</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">node_dtype</span><span class="p">,</span> <span class="n">node_attr_dtypes</span><span class="p">,</span> <span class="n">edge_attr_dtypes</span><span class="p">,</span> <span class="n">directed</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">ndims</span> <span class="o">=</span> <span class="n">ndims</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">position_attr</span> <span class="o">=</span> <span class="n">position_attr</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">coord_dtype</span> <span class="o">=</span> <span class="n">DType</span><span class="p">(</span><span class="n">node_attr_dtypes</span><span class="p">[</span><span class="n">position_attr</span><span class="p">])</span><span class="o">.</span><span class="n">base</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_node_rtree</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">PointRTree</span><span class="p">(</span><span class="n">node_dtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_dtype</span><span class="p">,</span> <span class="n">ndims</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_edge_rtree</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">LineRTree</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">node_dtype</span><span class="si">}</span><span class="s2">[2]&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_dtype</span><span class="p">,</span> <span class="n">ndims</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 
