@@ -1,3 +1,3 @@
-from .graph import Graph
+from .graph import DiGraph, Graph, GraphBase
 
-__all__ = ["Graph"]
+__all__ = ["DiGraph", "Graph", "GraphBase"]

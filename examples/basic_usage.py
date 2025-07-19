@@ -23,7 +23,6 @@ def main():
         node_attr_dtypes={"position": "double[3]"},
         edge_attr_dtypes={"score": "float32"},
         position_attr="position",
-        directed=False,
     )
     print(f"   Created graph with {graph.ndims} dimensions")
     print(f"   Node dtype: {graph.node_dtype}")

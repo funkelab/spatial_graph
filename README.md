@@ -50,7 +50,6 @@ graph = sg.SpatialGraph(
     node_attr_dtypes={"position": "double[3]"},
     edge_attr_dtypes={"score": "float32"},
     position_attr="position",
-    directed=False,
 )
 ```
 
