@@ -210,9 +210,11 @@ class UnDirectedCGraph(CGraph):
             Array of neighbor counts for each node in the input array.
         """
     @overload
-    def edges(self, node: Any, data: Literal[True]) -> Iterator[tuple[tuple, Any]]: ...
+    def edges(
+        self, node: Any = ..., data: Literal[True] = ...
+    ) -> Iterator[tuple[tuple, Any]]: ...
     @overload
-    def edges(self, node: Any, data: Literal[False]) -> Iterator[tuple]:
+    def edges(self, node: Any = ..., data: Literal[False] = ...) -> Iterator[tuple]:
         """Iterate over edges in the graph.
 
         For undirected graphs, each edge is yielded only once with nodes
@@ -289,7 +291,7 @@ class DirectedCGraph(CGraph):
         """
     @overload
     def in_edges(
-        self, node: Any = None, *, data: Literal[True]
+        self, node: Any = None, data: Literal[True] = ...
     ) -> Iterator[tuple[tuple, Any]]: ...
     @overload
     def in_edges(self, node: Any, data: Literal[False] = ...) -> Iterator[tuple]:
@@ -334,10 +336,10 @@ class DirectedCGraph(CGraph):
         """
     @overload
     def out_edges(
-        self, node: Any, data: Literal[True]
+        self, node: Any = None, data: Literal[True] = ...
     ) -> Iterator[tuple[tuple, Any]]: ...
     @overload
-    def out_edges(self, node: Any, data: Literal[False]) -> Iterator[tuple]:
+    def out_edges(self, node: Any, data: Literal[False] = ...) -> Iterator[tuple]:
         """Iterate over outgoing edges from a node.
 
         Only edges directed away from the specified node are yielded.
