@@ -44,8 +44,8 @@ def test_operations(directed):
         assert graph.num_edges() == len(nodes) ** 2 - len(nodes)
 
         for node in nodes:
-            in_neighbors = graph.count_in_neighbors(np.array([node], dtype="uint64"))
-            out_neighbors = graph.count_in_neighbors(np.array([node], dtype="uint64"))
+            in_neighbors = graph.num_in_neighbors(np.array([node], dtype="uint64"))
+            out_neighbors = graph.num_in_neighbors(np.array([node], dtype="uint64"))
             assert len(in_neighbors) == 1
             assert len(out_neighbors) == 1
             assert in_neighbors[0] == len(nodes) - 1
@@ -61,7 +61,7 @@ def test_operations(directed):
         assert graph.num_edges() == (len(nodes) ** 2 - len(nodes)) / 2
 
         for node in nodes:
-            neighbors = graph.count_neighbors(np.array([node], dtype="uint64"))
+            neighbors = graph.num_neighbors(np.array([node], dtype="uint64"))
             assert len(neighbors) == 1
             assert neighbors[0] == len(nodes) - 1
 

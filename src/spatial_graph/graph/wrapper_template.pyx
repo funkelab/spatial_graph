@@ -618,7 +618,7 @@ cdef class Graph:
     %set $prefixes=[""]
     %end if
     %for prefix in $prefixes
-    def count_${prefix}neighbors(self, NodeType[:] nodes):
+    def num_${prefix}neighbors(self, NodeType[:] nodes):
         num_nodes = len(nodes)
         cdef int[:] counts = view.array(
             shape=(num_nodes,),
@@ -647,7 +647,7 @@ cdef class Graph:
                 inc(it)
 
     def _num_${prefix}edges(self, NodeType[::1] nodes):
-        return np.sum(self.count_${prefix}neighbors(nodes))
+        return np.sum(self.num_${prefix}neighbors(nodes))
     %end for
 
     def __len__(self):
