@@ -108,6 +108,21 @@ if TYPE_CHECKING:
     class GraphBase(CGraph):
         """Base class for undirected graph instances."""
 
+        node_attrs: NodeAttrs
+        edge_attrs: EdgeAttrs
+        node_dtype: str
+        node_attr_dtypes: Mapping[str, str]
+        edge_attr_dtypes: Mapping[str, str]
+        directed: bool
+
+        def __init__(
+            self,
+            node_dtype: str,
+            node_attr_dtypes: Mapping[str, str] | None = None,
+            edge_attr_dtypes: Mapping[str, str] | None = None,
+            directed: bool = False,
+        ): ...
+
     class Graph(GraphBase, CGraph):
         """Base class for undirected graph instances."""
 
