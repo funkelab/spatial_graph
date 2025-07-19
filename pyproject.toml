@@ -55,6 +55,8 @@ repository = "https://github.com/funkelab/spatial_graph"
 [tool.ruff]
 target-version = "py39"
 line-length = 88
+fix = true
+unsafe-fixes = true
 
 [tool.ruff.lint]
 select = [
