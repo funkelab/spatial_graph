@@ -1,10 +1,17 @@
-from typing import ClassVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import numpy as np
 
 from .dtypes import DType
-from .graph import Graph
+from .graph.graph import Graph
 from .rtree import LineRTree, PointRTree
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from .graph.cgraph import DirectedCGraph, UnDirectedCGraph
 
 
 class SpatialGraph(Graph):
@@ -13,12 +20,13 @@ class SpatialGraph(Graph):
     def __init__(
         self,
         ndims,
-        node_dtype,
-        node_attr_dtypes,
-        edge_attr_dtypes,
-        position_attr,
-        directed=False,
-    ):
+        node_dtype: str,
+        node_attr_dtypes: Mapping[str, str] | None = None,
+        edge_attr_dtypes: Mapping[str, str] | None = None,
+        position_attr: str = "position",
+        directed: bool = False,
+    ) -> None:
+        node_attr_dtypes = node_attr_dtypes or {}
         if position_attr not in node_attr_dtypes:
             raise ValueError(
                 f"position attribute {position_attr!r} not defined in "
@@ -29,31 +37,33 @@ class SpatialGraph(Graph):
         self.ndims = ndims
         self.position_attr = position_attr
         self.coord_dtype = DType(node_attr_dtypes[position_attr]).base
-        self._node_rtree = PointRTree(node_dtype, self.coord_dtype, ndims)
-        self._edge_rtree = LineRTree(f"{node_dtype}[2]", self.coord_dtype, ndims)
+        self._node_rtree: Any = PointRTree(node_dtype, self.coord_dtype, ndims)
+        self._edge_rtree: Any = LineRTree(f"{node_dtype}[2]", self.coord_dtype, ndims)
 
-    def add_node(self, node, **kwargs):
+    def add_node(self, node: Any, *data: Any, **kwargs: Any) -> int:
         position = self._get_position(kwargs)
         self._node_rtree.insert_point_item(node, position)
-        super().add_node(node, **kwargs)
+        return super().add_node(node, *data, **kwargs)
 
-    def add_nodes(self, nodes, **kwargs):
+    def add_nodes(self, nodes: np.ndarray, *data: Any, **kwargs: Any) -> int:
         positions = self._get_position(kwargs)
         self._node_rtree.insert_point_items(nodes, positions)
-        super().add_nodes(nodes, **kwargs)
+        return super().add_nodes(nodes, *data, **kwargs)
 
-    def add_edge(self, edge, **kwargs):
+    def add_edge(self, edge: np.ndarray, *args: Any, **kwargs: Any) -> int:
         edge = np.array(edge, dtype=self.node_dtype)
         position_u = getattr(self.node_attrs[edge[0]], self.position_attr)
         position_v = getattr(self.node_attrs[edge[1]], self.position_attr)
         self._edge_rtree.insert_line(edge, position_u, position_v)
-        super().add_edge(edge, **kwargs)
+        return super().add_edge(edge, **kwargs)
 
-    def add_edges(self, edges, **kwargs):
+    def add_edges(
+        self, edges: np.ndarray, *args: np.ndarray, **kwargs: np.ndarray
+    ) -> int:
         starts = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
         ends = getattr(self.node_attrs[edges[:, 1]], self.position_attr)
         self._edge_rtree.insert_lines(edges, starts, ends)
-        super().add_edges(edges, **kwargs)
+        return super().add_edges(edges, *args, **kwargs)
 
     @property
     def roi(self):
@@ -79,15 +89,16 @@ class SpatialGraph(Graph):
     def edges(self):
         return self.query_edges_in_roi(self.roi)
 
-    def remove_nodes(self, nodes):
+    def remove_nodes(self, nodes: np.ndarray) -> None:
         positions = getattr(self.node_attrs[nodes], self.position_attr)
         self._node_rtree.delete_items(nodes, positions)
-        if not self.directed:
-            edges = self.edges_by_nodes(nodes)
-        else:
+        if self.directed:
+            obj = cast("DirectedCGraph", self)
             edges = np.concatenate(
-                self.in_edges_by_nodes(nodes), self.out_edges_by_nodes(nodes)
+                obj.in_edges_by_nodes(nodes), obj.out_edges_by_nodes(nodes)
             )
+        else:
+            edges = cast("UnDirectedCGraph", self).edges_by_nodes(nodes)
         positions_u = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
         positions_v = getattr(self.node_attrs[edges[:, 1]], self.position_attr)
         self._edge_rtree.delete_items(edges, positions_u, positions_v)
