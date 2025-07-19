@@ -11,15 +11,14 @@ edge_attr_dtypes = [{"score": "float64", "color": "uint8"}]
 @pytest.mark.parametrize("node_dtype", node_dtypes)
 @pytest.mark.parametrize("node_attr_dtypes", node_attr_dtypes)
 @pytest.mark.parametrize("edge_attr_dtypes", edge_attr_dtypes)
-@pytest.mark.parametrize("directed", [True, False])
-def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed):
-    sg.SpatialGraph(
+@pytest.mark.parametrize("cls", [sg.SpatialGraph, sg.SpatialDiGraph])
+def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, cls):
+    cls(
         ndims=4,
         node_dtype=node_dtype,
         node_attr_dtypes=node_attr_dtypes,
         edge_attr_dtypes=edge_attr_dtypes,
         position_attr="position",
-        directed=directed,
     )
 
 
@@ -30,7 +29,6 @@ def test_roi_query():
         node_attr_dtypes={"position": "double[3]"},
         edge_attr_dtypes={"score": "float32"},
         position_attr="position",
-        directed=False,
     )
 
     graph.add_nodes(
@@ -74,7 +72,6 @@ def test_delete():
         node_attr_dtypes={"position": "double[3]"},
         edge_attr_dtypes={"score": "float32"},
         position_attr="position",
-        directed=False,
     )
     nodes = np.arange(0, 100_000).astype("uint64")
     graph.add_nodes(

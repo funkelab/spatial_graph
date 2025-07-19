@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
 from .dtypes import DType
-from .graph.graph import Graph
+from .graph.graph import DiGraph, Graph, GraphBase
 from .rtree import LineRTree, PointRTree
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from .graph.cgraph import DirectedCGraph, UnDirectedCGraph
 
-
-class SpatialGraph(Graph):
+class SpatialGraphBase(GraphBase):
     edge_inclusion_values: ClassVar[list[str]] = ["incident", "leaving", "entering"]
 
     def __init__(
@@ -92,13 +90,12 @@ class SpatialGraph(Graph):
     def remove_nodes(self, nodes: np.ndarray) -> None:
         positions = getattr(self.node_attrs[nodes], self.position_attr)
         self._node_rtree.delete_items(nodes, positions)
-        if self.directed:
-            obj = cast("DirectedCGraph", self)
+        if isinstance(self, DiGraph):
             edges = np.concatenate(
-                obj.in_edges_by_nodes(nodes), obj.out_edges_by_nodes(nodes)
+                self.in_edges_by_nodes(nodes), self.out_edges_by_nodes(nodes)
             )
-        else:
-            edges = cast("UnDirectedCGraph", self).edges_by_nodes(nodes)
+        elif isinstance(self, Graph):
+            edges = self.edges_by_nodes(nodes)
         positions_u = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
         positions_v = getattr(self.node_attrs[edges[:, 1]], self.position_attr)
         self._edge_rtree.delete_items(edges, positions_u, positions_v)
@@ -108,3 +105,11 @@ class SpatialGraph(Graph):
         if self.position_attr in kwargs:
             return kwargs[self.position_attr]
         raise RuntimeError(f"position attribute '{self.position_attr}' not given")
+
+
+class SpatialGraph(SpatialGraphBase, Graph):
+    """Base class for undirected spatial graph instances."""
+
+
+class SpatialDiGraph(SpatialGraphBase, DiGraph):
+    """Base class for directed spatial graph instances."""
