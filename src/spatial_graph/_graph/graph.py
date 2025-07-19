@@ -9,7 +9,7 @@ import numpy as np
 import witty
 from Cheetah.Template import Template
 
-from spatial_graph.dtypes import DType
+from spatial_graph._dtypes import DType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from spatial_graph import SpatialGraph
-from spatial_graph.spatial_graph import SpatialDiGraph
+from spatial_graph._spatial_graph import SpatialDiGraph
 
 # either run this file directly or with pytest --codspeed
 if all(x not in {"--codspeed", "tests/test_bench.py"} for x in sys.argv):

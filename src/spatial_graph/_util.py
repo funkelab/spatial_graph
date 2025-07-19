@@ -3,8 +3,8 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Literal, overload
 
-from .graph import DiGraph, Graph
-from .spatial_graph import SpatialDiGraph, SpatialGraph
+from ._graph import DiGraph, Graph
+from ._spatial_graph import SpatialDiGraph, SpatialGraph
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
