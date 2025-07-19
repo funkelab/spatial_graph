@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, Literal, overload
 
 import numpy as np
 
@@ -193,7 +193,7 @@ class CGraph:
         """
 
 class UnDirectedCGraph(CGraph):
-    def count_neighbors(self, nodes: np.ndarray) -> int:
+    def count_neighbors(self, nodes: np.ndarray) -> np.ndarray:
         """Count the number of neighbors for each node.
 
         For undirected graphs, this counts all adjacent nodes regardless
@@ -206,10 +206,13 @@ class UnDirectedCGraph(CGraph):
 
         Returns
         -------
-        int
+        np.ndarray
             Array of neighbor counts for each node in the input array.
         """
-    def edges(self, node: Any = None, data: bool = False) -> Iterator:
+    @overload
+    def edges(self, node: Any, data: Literal[True]) -> Iterator[tuple[tuple, Any]]: ...
+    @overload
+    def edges(self, node: Any, data: Literal[False]) -> Iterator[tuple]:
         """Iterate over edges in the graph.
 
         For undirected graphs, each edge is yielded only once with nodes
@@ -227,8 +230,8 @@ class UnDirectedCGraph(CGraph):
         Yields
         ------
         tuple or tuple[tuple, Any]
-            If data=False: tuples of (node1, node2) representing edges.
-            If data=True: tuples of ((node1, node2), edge_data) where
+            If `data=False`: tuples of (node1, node2) representing edges.
+            If `data=True`: tuples of ((node1, node2), edge_data) where
             edge_data provides access to edge attributes.
         """
     def edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray:
@@ -249,15 +252,14 @@ class UnDirectedCGraph(CGraph):
             2D array of shape (n_edges, 2) where each row contains
             [node1, node2] representing an edge. For undirected graphs,
             node1 <= node2.
-
-        Notes
-        -----
-
         """
 
 class DirectedCGraph(CGraph):
-    def count_in_neighbors(self, nodes: np.ndarray) -> int:
+    def count_in_neighbors(self, nodes: np.ndarray) -> np.ndarray:
         """Count the number of incoming neighbors for each node.
+
+        This counts only nodes that have edges pointing to the specified nodes
+        (i.e., predecessors).
 
         Parameters
         ----------
@@ -266,16 +268,14 @@ class DirectedCGraph(CGraph):
 
         Returns
         -------
-        int
+        np.ndarray
             Array of incoming neighbor counts for each node in the input array.
-
-        Notes
-        -----
-        For directed graphs, this counts only nodes that have edges pointing
-        to the specified nodes (i.e., predecessors).
         """
-    def count_out_neighbors(self, nodes: np.ndarray) -> int:
+    def count_out_neighbors(self, nodes: np.ndarray) -> np.ndarray:
         """Count the number of outgoing neighbors for each node.
+
+        This counts only nodes that the specified nodes
+        have edges pointing to (i.e., successors).
 
         Parameters
         ----------
@@ -284,16 +284,18 @@ class DirectedCGraph(CGraph):
 
         Returns
         -------
-        int
+        np.ndarray
             Array of outgoing neighbor counts for each node in the input array.
-
-        Notes
-        -----
-        For directed graphs, this counts only nodes that the specified nodes
-        have edges pointing to (i.e., successors).
         """
-    def in_edges(self, node: Any, data: bool):
+    @overload
+    def in_edges(
+        self, node: Any = None, *, data: Literal[True]
+    ) -> Iterator[tuple[tuple, Any]]: ...
+    @overload
+    def in_edges(self, node: Any, data: Literal[False] = ...) -> Iterator[tuple]:
         """Iterate over incoming edges to a node.
+
+        Only edges directed toward the specified node are yielded.
 
         Parameters
         ----------
@@ -306,17 +308,17 @@ class DirectedCGraph(CGraph):
         Yields
         ------
         tuple or tuple[tuple, Any]
-            If data=False: tuples of (source_node, target_node) representing
+            If `data=False`: tuples of (source_node, target_node) representing
             incoming edges where target_node is the specified node.
-            If data=True: tuples of ((source_node, target_node), edge_data)
+            If `data=True`: tuples of ((source_node, target_node), edge_data)
             where edge_data provides access to edge attributes.
-
-        Notes
-        -----
-        Only edges directed toward the specified node are yielded.
         """
     def in_edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray:
         """Get all incoming edges to the specified nodes.
+
+        This method provides fast access to incoming edges for an array
+        of nodes. Edges between nodes in the input array will be reported
+        multiple times if both source and target are in the array.
 
         Parameters
         ----------
@@ -329,15 +331,16 @@ class DirectedCGraph(CGraph):
             2D array of shape (n_edges, 2) where each row contains
             [source_node, target_node] representing an incoming edge
             to one of the specified nodes.
-
-        Notes
-        -----
-        This method provides fast access to incoming edges for an array
-        of nodes. Edges between nodes in the input array will be reported
-        multiple times if both source and target are in the array.
         """
-    def out_edges(self, node: Any, data: bool):
+    @overload
+    def out_edges(
+        self, node: Any, data: Literal[True]
+    ) -> Iterator[tuple[tuple, Any]]: ...
+    @overload
+    def out_edges(self, node: Any, data: Literal[False]) -> Iterator[tuple]:
         """Iterate over outgoing edges from a node.
+
+        Only edges directed away from the specified node are yielded.
 
         Parameters
         ----------
@@ -350,17 +353,17 @@ class DirectedCGraph(CGraph):
         Yields
         ------
         tuple or tuple[tuple, Any]
-            If data=False: tuples of (source_node, target_node) representing
+            If `data=False`: tuples of (source_node, target_node) representing
             outgoing edges where source_node is the specified node.
-            If data=True: tuples of ((source_node, target_node), edge_data)
+            If `data=True`: tuples of ((source_node, target_node), edge_data)
             where edge_data provides access to edge attributes.
-
-        Notes
-        -----
-        Only edges directed away from the specified node are yielded.
         """
     def out_edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray:
         """Get all outgoing edges from the specified nodes.
+
+        This method provides fast access to outgoing edges for an array
+        of nodes. Edges between nodes in the input array will be reported
+        multiple times if both source and target are in the array.
 
         Parameters
         ----------
@@ -373,10 +376,4 @@ class DirectedCGraph(CGraph):
             2D array of shape (n_edges, 2) where each row contains
             [source_node, target_node] representing an outgoing edge
             from one of the specified nodes.
-
-        Notes
-        -----
-        This method provides fast access to outgoing edges for an array
-        of nodes. Edges between nodes in the input array will be reported
-        multiple times if both source and target are in the array.
         """
