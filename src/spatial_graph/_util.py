@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import warnings
-from collections.abc import Mapping
-from typing import Literal, overload
+from typing import TYPE_CHECKING, Literal, overload
 
 from .graph import DiGraph, Graph
 from .spatial_graph import SpatialDiGraph, SpatialGraph
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 @overload
