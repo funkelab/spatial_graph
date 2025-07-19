@@ -345,8 +345,8 @@ cdef class RTree:
                 convert_pyx_to_c_item(&pyx_items[i], &bb_mins[i, 0], &bb_maxs[i, 0]))
             if num_deleted == -1:
                 raise RuntimeError("RTree delete ran out of memory.")
-            if num_deleted == 0:
-                print(f"Item {pyx_items[i]} not deleted!")
+            # if num_deleted == 0:
+                # print(f"Item {pyx_items[i]} not deleted!")
             total_deleted += num_deleted
 
         return total_deleted

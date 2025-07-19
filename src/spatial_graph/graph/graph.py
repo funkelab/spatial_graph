@@ -1,11 +1,21 @@
+from __future__ import annotations
+
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal, overload
 
 import numpy as np
 import witty
 from Cheetah.Template import Template
+from typing_extensions import Self
 
 from spatial_graph.dtypes import DType
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from .cgraph import CGraph, DirectedCGraph, UnDirectedCGraph
+
 
 # Set platform-specific compile arguments
 if sys.platform == "win32":
@@ -20,66 +30,138 @@ else:
         "-Wno-unreachable-code",
     ]
 
+SRC_DIR = Path(__file__).parent
 
-class Graph:
-    def __new__(
-        cls,
-        node_dtype,
-        node_attr_dtypes=None,
-        edge_attr_dtypes=None,
-        directed=False,
-        *args,
-        **kwargs,
-    ):
-        if node_attr_dtypes is None:
-            node_attr_dtypes = {}
-        if edge_attr_dtypes is None:
-            edge_attr_dtypes = {}
 
-        node_dtype = DType(node_dtype)
-        node_attr_dtypes = {
-            name: DType(dtype) for name, dtype in node_attr_dtypes.items()
-        }
-        edge_attr_dtypes = {
-            name: DType(dtype) for name, dtype in edge_attr_dtypes.items()
-        }
+def _build_wrapper(
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+    directed: bool = False,
+) -> str:
+    if node_attr_dtypes is None:
+        node_attr_dtypes = {}
+    if edge_attr_dtypes is None:
+        edge_attr_dtypes = {}
 
-        src_dir = Path(__file__).parent
-        wrapper_template = Template(
-            file=str(src_dir / "wrapper_template.pyx"),
-            compilerSettings={"directiveStartToken": "%"},
-        )
-        wrapper_template.node_dtype = node_dtype
-        wrapper_template.node_attr_dtypes = node_attr_dtypes
-        wrapper_template.edge_attr_dtypes = edge_attr_dtypes
-        wrapper_template.directed = directed
+    wrapper_template = Template(
+        file=str(SRC_DIR / "wrapper_template.pyx"),
+        compilerSettings={"directiveStartToken": "%"},
+    )
+    wrapper_template.node_dtype = DType(node_dtype)
+    wrapper_template.node_attr_dtypes = {
+        name: DType(dtype) for name, dtype in node_attr_dtypes.items()
+    }
+    wrapper_template.edge_attr_dtypes = {
+        name: DType(dtype) for name, dtype in edge_attr_dtypes.items()
+    }
+    wrapper_template.directed = directed
 
-        wrapper = witty.compile_module(
-            str(wrapper_template),
-            source_files=[str(src_dir / "src" / "graph_lite.h")],
-            extra_compile_args=EXTRA_COMPILE_ARGS,
-            include_dirs=[str(src_dir)],
-            language="c++",
-            quiet=True,
-        )
-        GraphType = type(cls.__name__, (cls, wrapper.Graph), {})
-        return wrapper.Graph.__new__(GraphType)
+    return str(wrapper_template)
 
-    def __init__(
-        self, node_dtype, node_attr_dtypes=None, edge_attr_dtypes=None, directed=False
-    ):
-        if node_attr_dtypes is None:
-            node_attr_dtypes = {}
-        if edge_attr_dtypes is None:
-            edge_attr_dtypes = {}
-        super().__init__()
-        self.node_dtype = node_dtype
-        self.node_attr_dtypes = node_attr_dtypes
-        self.edge_attr_dtypes = edge_attr_dtypes
-        self.directed = directed
 
-        self.node_attrs = NodeAttrs(self)
-        self.edge_attrs = EdgeAttrs(self)
+@overload
+def _compile_graph(
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+    directed: Literal[True] = ...,
+) -> type[DirectedCGraph]: ...
+@overload
+def _compile_graph(
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+    directed: bool = ...,
+) -> type[UnDirectedCGraph]: ...
+def _compile_graph(
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+    directed: bool = False,
+) -> type[CGraph]:
+    wrapper_template = _build_wrapper(
+        node_dtype=node_dtype,
+        node_attr_dtypes=node_attr_dtypes,
+        edge_attr_dtypes=edge_attr_dtypes,
+        directed=directed,
+    )
+    wrapper = witty.compile_module(
+        wrapper_template,
+        source_files=[str(SRC_DIR / "src" / "graph_lite.h")],
+        extra_compile_args=EXTRA_COMPILE_ARGS,
+        include_dirs=[str(SRC_DIR)],
+        language="c++",
+        quiet=True,
+    )
+    return wrapper.Graph
+
+
+if TYPE_CHECKING:
+
+    class Graph(CGraph):
+        node_dtype: str
+        node_attr_dtypes: Mapping[str, str] | None
+        edge_attr_dtypes: Mapping[str, str] | None
+        directed: bool
+        node_attrs: NodeAttrs
+        edge_attrs: EdgeAttrs
+
+        def __init__(
+            self,
+            node_dtype: str,
+            node_attr_dtypes: Mapping[str, str] | None = None,
+            edge_attr_dtypes: Mapping[str, str] | None = None,
+            directed: bool = False,
+        ): ...
+else:
+
+    class Graph:
+        def __new__(
+            cls,
+            node_dtype: str,
+            node_attr_dtypes: Mapping[str, str] | None = None,
+            edge_attr_dtypes: Mapping[str, str] | None = None,
+            directed: bool = False,
+            *args,
+            **kwargs,
+        ) -> Self:
+            # dynamically compile a specialized C++ implementation of the graph
+            # tailored to the user's specific type requirements.
+            CGraph = _compile_graph(
+                node_dtype=node_dtype,
+                node_attr_dtypes=node_attr_dtypes,
+                edge_attr_dtypes=edge_attr_dtypes,
+                directed=directed,
+            )
+            # create a new class that inherits from both this class
+            # and the compiled c++ implementation `wrapper.Graph`
+            GraphType = type(cls.__name__, (cls, CGraph), {})
+            # call the __new__ method of the native C++ class, but pass the dynamically
+            # created class as the type.  This ensures the object will be an instance
+            # of the dynamically created class, but using the C++ allocation logic and
+            # initialization code.
+            return CGraph.__new__(GraphType)
+
+        def __init__(
+            self,
+            node_dtype: str,
+            node_attr_dtypes: Mapping[str, str] | None = None,
+            edge_attr_dtypes: Mapping[str, str] | None = None,
+            directed: bool = False,
+        ):
+            if node_attr_dtypes is None:
+                node_attr_dtypes = {}
+            if edge_attr_dtypes is None:
+                edge_attr_dtypes = {}
+            super().__init__()
+            self.node_dtype = node_dtype
+            self.node_attr_dtypes = node_attr_dtypes
+            self.edge_attr_dtypes = edge_attr_dtypes
+            self.directed = directed
+
+            self.node_attrs = NodeAttrs(self)
+            self.edge_attrs = EdgeAttrs(self)
 
 
 class NodeAttrsView:
