@@ -1,20 +1,22 @@
 from __future__ import annotations
 
 import sys
+import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
 import witty
 from Cheetah.Template import Template
-from typing_extensions import Self
 
 from spatial_graph.dtypes import DType
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
 
-    from .cgraph import CGraph, DirectedCGraph, UnDirectedCGraph
+    from typing_extensions import Literal, Self
+
+    from .cgraph import CDiGraph, CGraph, CGraphBase
 
 
 # Set platform-specific compile arguments
@@ -70,20 +72,20 @@ def _compile_graph(
     node_attr_dtypes: Mapping[str, str] | None = None,
     edge_attr_dtypes: Mapping[str, str] | None = None,
     directed: Literal[True] = ...,
-) -> type[DirectedCGraph]: ...
+) -> type[CDiGraph]: ...
 @overload
 def _compile_graph(
     node_dtype: str,
     node_attr_dtypes: Mapping[str, str] | None = None,
     edge_attr_dtypes: Mapping[str, str] | None = None,
     directed: bool = ...,
-) -> type[UnDirectedCGraph]: ...
+) -> type[CGraph]: ...
 def _compile_graph(
     node_dtype: str,
     node_attr_dtypes: Mapping[str, str] | None = None,
     edge_attr_dtypes: Mapping[str, str] | None = None,
     directed: bool = False,
-) -> type[CGraph]:
+) -> type[CGraphBase]:
     wrapper_template = _build_wrapper(
         node_dtype=node_dtype,
         node_attr_dtypes=node_attr_dtypes,
@@ -103,13 +105,15 @@ def _compile_graph(
 
 if TYPE_CHECKING:
 
-    class Graph(CGraph):
-        node_dtype: str
-        node_attr_dtypes: Mapping[str, str] | None
-        edge_attr_dtypes: Mapping[str, str] | None
-        directed: bool
+    class GraphBase(CGraph):
+        """Base class for undirected graph instances."""
+
         node_attrs: NodeAttrs
         edge_attrs: EdgeAttrs
+        node_dtype: str
+        node_attr_dtypes: Mapping[str, str]
+        edge_attr_dtypes: Mapping[str, str]
+        directed: bool
 
         def __init__(
             self,
@@ -118,18 +122,40 @@ if TYPE_CHECKING:
             edge_attr_dtypes: Mapping[str, str] | None = None,
             directed: bool = False,
         ): ...
+
+    class Graph(GraphBase, CGraph):
+        """Base class for undirected graph instances."""
+
+    class DiGraph(GraphBase, CDiGraph):
+        """Base class for directed graph instances."""
+
+
 else:
 
-    class Graph:
+    class GraphBase:
+        """Base class for compiled graph instances."""
+
         def __new__(
             cls,
             node_dtype: str,
             node_attr_dtypes: Mapping[str, str] | None = None,
             edge_attr_dtypes: Mapping[str, str] | None = None,
-            directed: bool = False,
-            *args,
-            **kwargs,
+            directed: bool | None = None,
+            *args: Any,
+            **kwargs: Any,
         ) -> Self:
+            if directed is not None:
+                warnings.warn(
+                    "The 'directed' argument is deprecated and will be removed in "
+                    "future versions. Use the 'DiGraph' class for directed graphs.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                cls = DiGraph if directed else Graph
+
+            directed = issubclass(cls, DiGraph)
+
+            print("Compiling graph with directed =", directed)
             # dynamically compile a specialized C++ implementation of the graph
             # tailored to the user's specific type requirements.
             CGraph = _compile_graph(
@@ -138,13 +164,12 @@ else:
                 edge_attr_dtypes=edge_attr_dtypes,
                 directed=directed,
             )
-            # create a new class that inherits from both this class
-            # and the compiled c++ implementation `wrapper.Graph`
+
+            # create a new class that inherits from both the base class
+            # and the compiled c++ implementation
             GraphType = type(cls.__name__, (cls, CGraph), {})
-            # call the __new__ method of the native C++ class, but pass the dynamically
-            # created class as the type.  This ensures the object will be an instance
-            # of the dynamically created class, but using the C++ allocation logic and
-            # initialization code.
+
+            # create and initialize the instance
             return CGraph.__new__(GraphType)
 
         def __init__(
@@ -154,18 +179,20 @@ else:
             edge_attr_dtypes: Mapping[str, str] | None = None,
             directed: bool = False,
         ):
-            if node_attr_dtypes is None:
-                node_attr_dtypes = {}
-            if edge_attr_dtypes is None:
-                edge_attr_dtypes = {}
             super().__init__()
             self.node_dtype = node_dtype
-            self.node_attr_dtypes = node_attr_dtypes
-            self.edge_attr_dtypes = edge_attr_dtypes
+            self.node_attr_dtypes = node_attr_dtypes or {}
+            self.edge_attr_dtypes = edge_attr_dtypes or {}
             self.directed = directed
 
             self.node_attrs = NodeAttrs(self)
             self.edge_attrs = EdgeAttrs(self)
+
+    class Graph(GraphBase):
+        """Base class for undirected graph instances."""
+
+    class DiGraph(GraphBase):
+        """Base class for directed graph instances."""
 
 
 class NodeAttrsView:
@@ -202,7 +229,7 @@ class NodeAttrsView:
         # 3. None
         super().__setattr__("nodes", nodes)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> np.ndarray:
         if name in self.graph.node_attr_dtypes:
             return getattr(self, f"get_attr_{name}")(self.nodes)
         else:
@@ -220,9 +247,12 @@ class NodeAttrsView:
 
 
 class EdgeAttrsView:
-    def __init__(self, graph, edges):
+    graph: GraphBase
+    edges: np.ndarray | tuple[float, float] | None
+
+    def __init__(self, graph: GraphBase, edges: np.ndarray | Iterable | None) -> None:
         super().__setattr__("graph", graph)
-        for name in graph.edge_attr_dtypes.keys():
+        for name in graph.edge_attr_dtypes:
             super().__setattr__(
                 f"get_attr_{name}", getattr(graph, f"get_edges_data_{name}")
             )
@@ -254,7 +284,7 @@ class EdgeAttrsView:
                 # edges should be an iteratable
                 try:
                     # does it have a length?
-                    len(edges)
+                    len(edges)  # type: ignore
                     # case 2 and 3
                     edges = np.array(edges, dtype=graph.node_dtype)
                 except Exception as e:  # pragma: no cover
@@ -265,8 +295,8 @@ class EdgeAttrsView:
         if isinstance(edges, np.ndarray):
             if len(edges) == 0:
                 edges = edges.reshape((0, 2))
-            assert edges.shape[1] == 2, "Edge arrays should have shape (n, 2)"
-            edges = np.ascontiguousarray(edges.T)
+            assert edges.shape[1] == 2, "Edge arrays should have shape (n, 2)"  # type: ignore
+            edges = np.ascontiguousarray(edges.T)  # type: ignore
         elif isinstance(edges, tuple):
             # a single edge
             for name in graph.edge_attr_dtypes.keys():
@@ -283,7 +313,7 @@ class EdgeAttrsView:
         # 3. None
         super().__setattr__("edges", edges)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> np.ndarray:
         if name in self.graph.edge_attr_dtypes:
             if self.edges is not None:
                 return getattr(self, f"get_attr_{name}")(self.edges[0], self.edges[1])
@@ -306,16 +336,16 @@ class EdgeAttrsView:
 
 
 class NodeAttrs(NodeAttrsView):
-    def __init__(self, graph):
+    def __init__(self, graph: GraphBase) -> None:
         super().__init__(graph, nodes=None)
 
-    def __getitem__(self, nodes):
+    def __getitem__(self, nodes) -> NodeAttrsView:
         return NodeAttrsView(self.graph, nodes)
 
 
 class EdgeAttrs(EdgeAttrsView):
-    def __init__(self, graph):
+    def __init__(self, graph: GraphBase) -> None:
         super().__init__(graph, edges=None)
 
-    def __getitem__(self, edges):
+    def __getitem__(self, edges) -> EdgeAttrsView:
         return EdgeAttrsView(self.graph, edges)

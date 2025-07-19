@@ -11,16 +11,14 @@ edge_attr_dtypes = [{"score": "float64", "color": "uint8"}]
 @pytest.mark.parametrize("node_dtype", node_dtypes)
 @pytest.mark.parametrize("node_attr_dtypes", node_attr_dtypes)
 @pytest.mark.parametrize("edge_attr_dtypes", edge_attr_dtypes)
-@pytest.mark.parametrize("directed", [True, False])
-def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed):
-    sg.Graph(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
+@pytest.mark.parametrize("cls", [sg.Graph, sg.DiGraph])
+def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, cls):
+    cls(node_dtype, node_attr_dtypes, edge_attr_dtypes)
 
 
-@pytest.mark.parametrize("directed", [True, False])
-def test_operations(directed):
-    graph = sg.Graph(
-        "uint64", {"score": "float"}, {"score": "float"}, directed=directed
-    )
+@pytest.mark.parametrize("cls", [sg.Graph, sg.DiGraph])
+def test_operations(cls):
+    graph = cls("uint64", {"score": "float"}, {"score": "float"})
 
     nodes = [1, 2, 3, 4, 5]
     graph.add_nodes(
@@ -32,7 +30,7 @@ def test_operations(directed):
         for v in nodes:
             if v == u:
                 continue
-            if not directed and u > v:
+            if not isinstance(graph, sg.DiGraph) and u > v:
                 continue
             num_added += graph.add_edge(
                 np.array([u, v], dtype="uint64"), score=u * 100 + v
@@ -40,7 +38,7 @@ def test_operations(directed):
 
     assert graph.num_edges() == num_added
 
-    if directed:
+    if isinstance(graph, sg.DiGraph):
         assert graph.num_edges() == len(nodes) ** 2 - len(nodes)
 
         for node in nodes:
@@ -70,7 +68,7 @@ def test_operations(directed):
 
 
 def test_directed_edges():
-    graph = sg.Graph("uint64", directed=True)
+    graph = sg.DiGraph("uint64")
     graph.add_nodes(np.array([0, 1, 2], dtype="uint64"))
     graph.add_edges(np.array([[0, 1], [1, 2], [2, 0]], dtype="uint64"))
 
@@ -104,7 +102,6 @@ def test_attribute_modification():
         "uint64",
         {"attr1": "double", "attr2": "int", "attr3": "float32[3]"},
         {"attr1": "int[4]"},
-        directed=False,
     )
 
     graph.add_nodes(
@@ -199,9 +196,7 @@ def test_attribute_modification():
 
 
 def test_missing_nodes_edges():
-    graph = sg.Graph(
-        "uint64", {"node_attr": "float32"}, {"edge_attr": "float32"}, directed=False
-    )
+    graph = sg.Graph("uint64", {"node_attr": "float32"}, {"edge_attr": "float32"})
     graph.add_nodes(
         np.array([1, 2, 3, 4, 5], dtype="uint64"),
         node_attr=np.array([0.1, 0.2, 0.3, 0.4, 0.5], dtype="float32"),
@@ -228,7 +223,7 @@ def test_missing_nodes_edges():
 
 
 def test_missing_attribute():
-    graph = sg.Graph("uint64", directed=False)
+    graph = sg.Graph("uint64")
     graph.add_nodes(np.array([1, 2, 3, 4, 5], dtype="uint64"))
     graph.add_edges(np.array([[1, 2], [3, 4], [5, 1]], dtype="uint64"))
 
