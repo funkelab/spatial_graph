@@ -136,8 +136,9 @@ else:
                     DeprecationWarning,
                     stacklevel=2,
                 )
-            else:
-                directed = issubclass(cls, DiGraph)
+                cls = DiGraph if directed else Graph
+
+            directed = issubclass(cls, DiGraph)
 
             print("Compiling graph with directed =", directed)
             # dynamically compile a specialized C++ implementation of the graph
