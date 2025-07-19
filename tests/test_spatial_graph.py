@@ -12,9 +12,9 @@ edge_attr_dtypes = [{"score": "float64", "color": "uint8"}]
 @pytest.mark.parametrize("ndims", [None, 4])
 @pytest.mark.parametrize("directed", [True, False])
 def test_util_construction(ndims: int, directed: bool) -> None:
-    graph = create_graph(
-        ndims=ndims,
+    graph = create_graph(  # type: ignore  (not sure why yet)
         node_dtype="uint16",
+        ndims=ndims,
         node_attr_dtypes={"position": "double[4]"},
         edge_attr_dtypes={"score": "float64", "color": "uint8"},
         directed=directed,
