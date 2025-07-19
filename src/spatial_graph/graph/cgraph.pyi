@@ -193,8 +193,8 @@ class CGraph:
         """
 
 class UnDirectedCGraph(CGraph):
-    def count_neighbors(self, nodes: np.ndarray) -> np.ndarray:
-        """Count the number of neighbors for each node.
+    def num_neighbors(self, nodes: np.ndarray) -> np.ndarray:
+        """Return the number of neighbors for each node.
 
         For undirected graphs, this counts all adjacent nodes regardless
         of edge direction since edges are bidirectional.
@@ -257,8 +257,8 @@ class UnDirectedCGraph(CGraph):
         """
 
 class DirectedCGraph(CGraph):
-    def count_in_neighbors(self, nodes: np.ndarray) -> np.ndarray:
-        """Count the number of incoming neighbors for each node.
+    def num_in_neighbors(self, nodes: np.ndarray) -> np.ndarray:
+        """Return the number of incoming neighbors for each node.
 
         This counts only nodes that have edges pointing to the specified nodes
         (i.e., predecessors).
@@ -273,8 +273,8 @@ class DirectedCGraph(CGraph):
         np.ndarray
             Array of incoming neighbor counts for each node in the input array.
         """
-    def count_out_neighbors(self, nodes: np.ndarray) -> np.ndarray:
-        """Count the number of outgoing neighbors for each node.
+    def num_out_neighbors(self, nodes: np.ndarray) -> np.ndarray:
+        """Return the number of outgoing neighbors for each node.
 
         This counts only nodes that the specified nodes
         have edges pointing to (i.e., successors).

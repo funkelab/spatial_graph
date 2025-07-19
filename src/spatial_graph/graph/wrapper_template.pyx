@@ -618,7 +618,7 @@ cdef class Graph:
     %set $prefixes=[""]
     %end if
     %for prefix in $prefixes
-    def count_${prefix}neighbors(self, NodeType[:] nodes):
+    def num_${prefix}neighbors(self, NodeType[:] nodes):
         num_nodes = len(nodes)
         cdef int[:] counts = view.array(
             shape=(num_nodes,),
