@@ -115,20 +115,15 @@ extern inline coord_t distance(
         """Convenience function to insert a single line. To insert multiple
         lines in bulk, please use the faster `insert_lines`.
 
-        Args:
-
-            line (`item_dtype`):
-
-                The line identifier (as passed as the `item_dtype` to the
-                constructor).
-
-            start (`ndarray`, shape `(d,)`):
-
-                The coordinates of the start of the line.
-
-            end (`ndarray`, shape `(d,)`):
-
-                The coordinates of the end of the line.
+        Parameters
+        ----------
+        line : np.ndarray
+            The line identifier (as passed as the `item_dtype` to the
+            constructor).
+        start : np.ndarray
+            The coordinates of the start of the line.
+        end : np.ndarray
+            The coordinates of the end of the line.
         """
         lines = np.array([line], dtype=self.item_dtype.base)
         starts = start[np.newaxis]
@@ -138,22 +133,19 @@ extern inline coord_t distance(
     def insert_lines(self, lines, starts, ends):
         """Insert a list of lines.
 
-        Args:
+        Parameters
+        ----------
+        lines : np.ndarray, shape `(n, [m])`:
+            Array containing the line identifiers (as passed as the
+            `item_dtype` to the constructor). If the identifiers are an
+            array of size `m`, the expected shape is `(n, m)` where `n` is
+            the number of lines, otherwise the shape is just `(n,)`.
 
-            lines (`ndarray`, shape `(n, [m])`):
+        starts : np.ndarray, shape `(n, d)`:
+            The coordinates of the start of each line.
 
-                Array containing the line identifiers (as passed as the
-                `item_dtype` to the constructor). If the identifiers are an
-                array of size `m`, the expected shape is `(n, m)` where `n` is
-                the number of lines, otherwise the shape is just `(n,)`.
-
-            starts (`ndarray`, shape `(n, d)`):
-
-                The coordinates of the start of each line.
-
-            ends (`ndarray`, shape `(n, d)`):
-
-                The coordinates of the end of each line.
+        ends : np.ndarray, shape `(n, d)`:
+            The coordinates of the end of each line.
         """
         # we just forward to bb insert, "start" and "end" will be used to compute
         # the bounding box in our custom converter above
