@@ -7,7 +7,6 @@ repo_name: funkelab/spatial_graph
 repo_url: https://github.com/funkelab/spatial_graph
 
 theme:
-
   name: material
   palette:
     scheme: default
@@ -30,6 +29,7 @@ plugins:
           options:
             docstring_section_style: list # or "table"
             docstring_style: "numpy"
+            preload_modules: [spatial_graph]
             filters: ["!^_"]
             heading_level: 1
             merge_init_into_class: true
@@ -40,3 +40,5 @@ plugins:
             show_symbol_type_heading: true
             show_symbol_type_toc: true
             summary: true
+            inherited_members: true
+            force_inspection: true

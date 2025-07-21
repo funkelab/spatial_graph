@@ -87,18 +87,15 @@ class DType:
             "base_c_type[::1]"      if not an array type and add_dim
             "base_c_type[:, ::1]"   if an array type and add_dim
 
-        Args:
-
-            use_memory_view:
-
-                If set, will produce "dtype[::1]" instead of "dtype[dim]" for
-                array types.
-
-            add_dim:
-
-                Append a dim to the type, e.g., "int32_t[::1]" instead of
-                "int32_t" for dtype "int32". If this DType is already an array,
-                will create a 2D array, e.g., "int32_t[:, ::1]".
+        Parameters
+        ----------
+        use_memory_view : bool
+            If set, will produce "dtype[::1]" instead of "dtype[dim]" for
+            array types.
+        add_dim : bool
+            Append a dim to the type, e.g., "int32_t[::1]" instead of
+            "int32_t" for dtype "int32". If this DType is already an array,
+            will create a 2D array, e.g., "int32_t[:, ::1]".
         """
         if self.is_array:
             if add_dim:

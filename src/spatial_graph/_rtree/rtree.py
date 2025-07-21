@@ -6,7 +6,7 @@ import numpy as np
 import witty
 from Cheetah.Template import Template
 
-from spatial_graph.dtypes import DType
+from spatial_graph._dtypes import DType
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
 if sys.platform == "win32":  # pragma: no cover

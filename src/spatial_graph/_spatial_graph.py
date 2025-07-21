@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
-from .dtypes import DType
-from .graph.graph import DiGraph, Graph, GraphBase
-from .rtree import LineRTree, PointRTree
+from ._dtypes import DType
+from ._graph.graph import DiGraph, Graph, GraphBase
+from ._rtree import LineRTree, PointRTree
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
