@@ -13,7 +13,9 @@ edge_attr_dtypes = [{"score": "float64", "color": "uint8"}]
 @pytest.mark.parametrize("edge_attr_dtypes", edge_attr_dtypes)
 @pytest.mark.parametrize("cls", [sg.Graph, sg.DiGraph])
 def test_construction(node_dtype, node_attr_dtypes, edge_attr_dtypes, cls):
-    cls(node_dtype, node_attr_dtypes, edge_attr_dtypes)
+    obj1 = cls(node_dtype, node_attr_dtypes, edge_attr_dtypes)
+    obj2 = cls(node_dtype, node_attr_dtypes, edge_attr_dtypes)
+    assert type(obj1) is type(obj2)
 
 
 @pytest.mark.parametrize("cls", [sg.Graph, sg.DiGraph])

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
 import warnings
 from pathlib import Path
@@ -103,6 +105,52 @@ def _compile_graph(
     return wrapper.Graph
 
 
+def _hash_args(containers: tuple[Any, ...]) -> str:
+    """Hash a bunch of mutable arg container objects in a reproducible way.
+
+    This is for stuff like extra_compile_args, extra_link_args, and extension_kwargs.
+    """
+    hash_obj = hashlib.md5()
+    for container in containers:
+        # sort dict keys for reproducibility
+        serialized = json.dumps(container, sort_keys=True)
+        # Update the hash object with the serialized container
+        hash_obj.update(serialized.encode())
+    return hash_obj.hexdigest()
+
+
+# This caches the outputs of _get_cached_graph_subtype
+# to avoid recompiling the same graph type multiple times.
+# it allows `type(Graph('uint64')) is type(Graph('uint64'))`
+_CLS_CACHE: dict[str, tuple[type, type[GraphBase]]] = {}
+
+
+def _get_cached_graph_subtype(
+    cls: type[GraphBase],
+    node_dtype: str,
+    node_attr_dtypes: Mapping[str, str] | None = None,
+    edge_attr_dtypes: Mapping[str, str] | None = None,
+) -> tuple[type[CGraph], type[GraphBase]]:
+    _hash = _hash_args((node_dtype, node_attr_dtypes or {}, edge_attr_dtypes or {}))
+    _hash += str(hash(cls))
+    if _hash not in _CLS_CACHE:
+        directed = issubclass(cls, DiGraph)
+        # dynamically compile a specialized C++ implementation of the graph
+        # tailored to the user's specific type requirements.
+        CGraph = _compile_graph(
+            node_dtype=node_dtype,
+            node_attr_dtypes=node_attr_dtypes,
+            edge_attr_dtypes=edge_attr_dtypes,
+            directed=directed,
+        )
+        SubClass = type(cls.__name__, (cls, CGraph), {})
+        # create a new class that inherits from both the base class
+        # and the compiled c++ implementation
+        _CLS_CACHE[_hash] = (CGraph, SubClass)
+
+    return _CLS_CACHE[_hash]
+
+
 if TYPE_CHECKING:
 
     class GraphBase(CGraph):
@@ -153,21 +201,13 @@ else:
                 )
                 cls = DiGraph if directed else Graph
 
-            directed = issubclass(cls, DiGraph)
-
-            print("Compiling graph with directed =", directed)
-            # dynamically compile a specialized C++ implementation of the graph
-            # tailored to the user's specific type requirements.
-            CGraph = _compile_graph(
+            # determine the class to use based on the base class
+            CGraph, GraphType = _get_cached_graph_subtype(
+                cls=cls,
                 node_dtype=node_dtype,
                 node_attr_dtypes=node_attr_dtypes,
                 edge_attr_dtypes=edge_attr_dtypes,
-                directed=directed,
             )
-
-            # create a new class that inherits from both the base class
-            # and the compiled c++ implementation
-            GraphType = type(cls.__name__, (cls, CGraph), {})
 
             # create and initialize the instance
             return CGraph.__new__(GraphType)
