@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/pypi/l/spatial-graph.svg?color=green)](https://github.com/funkelab/spatial_graph/raw/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/spatial-graph.svg?color=green)](https://pypi.org/project/spatial-graph)
 [![Python Version](https://img.shields.io/pypi/pyversions/spatial-graph.svg?color=green)](https://python.org)
-[![CI](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yaml/badge.svg)](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yaml)
+[![CI](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yml/badge.svg)](https://github.com/funkelab/spatial_graph/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/funkelab/spatial_graph/branch/main/graph/badge.svg)](https://codecov.io/gh/funkelab/spatial_graph)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/funkelab/spatial_graph)
 
