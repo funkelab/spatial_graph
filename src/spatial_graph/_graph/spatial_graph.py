@@ -36,8 +36,8 @@ class SpatialGraphBase(GraphBase):
         self.ndims = ndims
         self.position_attr = position_attr
         self.coord_dtype = DType(node_attr_dtypes[position_attr]).base
-        self._node_rtree: Any = PointRTree(node_dtype, self.coord_dtype, ndims)
-        self._edge_rtree: Any = LineRTree(f"{node_dtype}[2]", self.coord_dtype, ndims)
+        self._node_rtree = PointRTree(node_dtype, self.coord_dtype, ndims)
+        self._edge_rtree = LineRTree(f"{node_dtype}[2]", self.coord_dtype, ndims)
 
     def add_node(self, node: Any, *data: Any, **kwargs: Any) -> int:
         position = self._get_position(kwargs)
