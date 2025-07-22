@@ -219,6 +219,7 @@ class GraphBase:
         """
         return self._cgraph.add_edges(edges, *args, **kwargs)
 
+    @property
     def nodes(self) -> np.ndarray:
         """Get all node IDs in the graph.
 

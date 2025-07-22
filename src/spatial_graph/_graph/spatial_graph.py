@@ -69,20 +69,16 @@ class SpatialGraphBase(GraphBase):
         return self._node_rtree.bounding_box()
 
     def query_nodes_in_roi(self, roi):
-        return self._node_rtree.search(roi[0], roi[1])
+        return self._node_rtree._ctree.search(roi[0], roi[1])
 
     def query_edges_in_roi(self, roi):
-        return self._edge_rtree.search(roi[0], roi[1])
+        return self._edge_rtree._ctree.search(roi[0], roi[1])
 
     def query_nearest_nodes(self, point, k, return_distances=False):
-        return self._node_rtree.nearest(point, k, return_distances)
+        return self._node_rtree._ctree.nearest(point, k, return_distances)
 
     def query_nearest_edges(self, point, k, return_distances=False):
-        return self._edge_rtree.nearest(point, k, return_distances)
-
-    @property
-    def nodes(self):
-        return super().nodes()
+        return self._edge_rtree._ctree.nearest(point, k, return_distances)
 
     @property
     def edges(self):
