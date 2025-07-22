@@ -8,7 +8,6 @@ def test_non_identifier_names():
         ValueError, match="Node attribute names must be valid identifiers"
     ):
         sg.Graph(
-            ndims=4,
             node_dtype="uint16",
             node_attr_dtypes={"3Dposition": "double[4]"},
         )
@@ -17,7 +16,6 @@ def test_non_identifier_names():
         ValueError, match="Edge attribute names must be valid identifiers"
     ):
         sg.Graph(
-            ndims=4,
             node_dtype="uint16",
             edge_attr_dtypes={"3Dposition": "double[4]"},
         )
@@ -34,17 +32,3 @@ def test_invalid_spatial_graphs():
             edge_attr_dtypes={"score": "double[4]"},
             position_attr="not_position",
         )
-
-
-def test_deprecation():
-    with pytest.warns(
-        DeprecationWarning, match="The 'directed' argument is deprecated"
-    ):
-        graph = sg.Graph(
-            node_dtype="uint64",
-            node_attr_dtypes={"position": "double[3]"},
-            edge_attr_dtypes={"score": "float32"},
-            directed=True,  # This should raise a deprecation warning
-        )
-
-    assert isinstance(graph, sg.DiGraph)

@@ -1,391 +1,227 @@
 from __future__ import annotations
 
-import hashlib
-import json
-import sys
-import warnings
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Literal, overload
 
-import numpy as np
-import witty
-from Cheetah.Template import Template
-
-from spatial_graph._dtypes import DType
+from .graph_base import GraphBase
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterator
 
-    from typing_extensions import Literal, Self
-
-    from .cgraph import CDiGraph, CGraph, CGraphBase
+    import numpy as np
 
 
-# Set platform-specific compile arguments
-if sys.platform == "win32":  # pragma: no cover
-    # Use /O2 for optimization and /std:c++20 for C++20
-    EXTRA_COMPILE_ARGS = ["/O2", "/std:c++20", "/wd4101"]
-else:
-    # -O3 for optimization and -std=c++20 for C++20
-    EXTRA_COMPILE_ARGS = [
-        "-O3",
-        "-std=c++20",
-        "-Wno-unused-variable",
-        "-Wno-unreachable-code",
-    ]
+class Graph(GraphBase):
+    directed: Literal[False] = False
 
-SRC_DIR = Path(__file__).parent
+    def num_neighbors(self, nodes: np.ndarray) -> np.ndarray:
+        """Return the number of neighbors for each node.
 
+        For undirected graphs, this counts all adjacent nodes regardless
+        of edge direction since edges are bidirectional.
 
-def _build_wrapper(
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    directed: bool = False,
-) -> str:
-    if node_attr_dtypes is None:
-        node_attr_dtypes = {}
-    if edge_attr_dtypes is None:
-        edge_attr_dtypes = {}
-    if not all(str.isidentifier(name) for name in node_attr_dtypes):
-        raise ValueError("Node attribute names must be valid identifiers")
-    if not all(str.isidentifier(name) for name in edge_attr_dtypes):
-        raise ValueError("Edge attribute names must be valid identifiers")
+        Parameters
+        ----------
+        nodes : np.ndarray
+            Array of node identifiers to count neighbors for.
 
-    wrapper_template = Template(
-        file=str(SRC_DIR / "wrapper_template.pyx"),
-        compilerSettings={"directiveStartToken": "%"},
-    )
-    wrapper_template.node_dtype = DType(node_dtype)
-    wrapper_template.node_attr_dtypes = {
-        name: DType(dtype) for name, dtype in node_attr_dtypes.items()
-    }
-    wrapper_template.edge_attr_dtypes = {
-        name: DType(dtype) for name, dtype in edge_attr_dtypes.items()
-    }
-    wrapper_template.directed = directed
+        Returns
+        -------
+        np.ndarray
+            Array of neighbor counts for each node in the input array.
+        """
+        return self._cgraph.num_neighbors(nodes)
 
-    return str(wrapper_template)
+    @overload
+    def edges(
+        self, node: Any = ..., data: Literal[True] = ...
+    ) -> Iterator[tuple[tuple, Any]]: ...
+    @overload
+    def edges(self, node: Any = ..., data: Literal[False] = ...) -> Iterator[tuple]: ...
+    def edges(self, node: Any = None, data: bool = False) -> Iterator[tuple]:
+        """Iterate over edges in the graph.
 
+        For undirected graphs, each edge is yielded only once with nodes
+        ordered such that node1 < node2 to avoid duplicates.
 
-@overload
-def _compile_graph(
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    directed: Literal[True] = ...,
-) -> type[CDiGraph]: ...
-@overload
-def _compile_graph(
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    directed: bool = ...,
-) -> type[CGraph]: ...
-def _compile_graph(
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-    directed: bool = False,
-) -> type[CGraphBase]:
-    wrapper_template = _build_wrapper(
-        node_dtype=node_dtype,
-        node_attr_dtypes=node_attr_dtypes,
-        edge_attr_dtypes=edge_attr_dtypes,
-        directed=directed,
-    )
-    wrapper = witty.compile_module(
-        wrapper_template,
-        source_files=[str(SRC_DIR / "src" / "graph_lite.h")],
-        extra_compile_args=EXTRA_COMPILE_ARGS,
-        include_dirs=[str(SRC_DIR)],
-        language="c++",
-        quiet=True,
-    )
-    return wrapper.Graph
+        Parameters
+        ----------
+        node : Any, optional
+            If provided, only iterate over edges incident to this node.
+            If None, iterate over all edges in the graph.
+        data : bool, default False
+            If True, yield (edge, edge_data) tuples. If False, yield
+            only edge tuples.
+
+        Yields
+        ------
+        tuple or tuple[tuple, Any]
+            If `data=False`: tuples of (node1, node2) representing edges.
+            If `data=True`: tuples of ((node1, node2), edge_data) where
+            edge_data provides access to edge attributes.
+        """
+        return self._cgraph.edges(node, data)
+
+    def edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray:
+        """Get all edges incident to the specified nodes.
+
+        This method provides fast access to edges incident to an array
+        of nodes. Note that edges between nodes in the input array will
+        be reported multiple times (once for each incident node).
+
+        Parameters
+        ----------
+        nodes : np.ndarray
+            Array of node identifiers to find incident edges for.
+
+        Returns
+        -------
+        np.ndarray
+            2D array of shape (n_edges, 2) where each row contains
+            [node1, node2] representing an edge. For undirected graphs,
+            node1 <= node2.
+        """
+        return self._cgraph.edges_by_nodes(nodes)
 
 
-def _hash_args(containers: tuple[Any, ...]) -> str:
-    """Hash a bunch of mutable arg container objects in a reproducible way.
+class DiGraph(GraphBase):
+    directed: Literal[True] = True
 
-    This is for stuff like extra_compile_args, extra_link_args, and extension_kwargs.
-    """
-    hash_obj = hashlib.md5()
-    for container in containers:
-        # sort dict keys for reproducibility
-        serialized = json.dumps(container, sort_keys=True)
-        # Update the hash object with the serialized container
-        hash_obj.update(serialized.encode())
-    return hash_obj.hexdigest()
+    def num_in_neighbors(self, nodes: np.ndarray) -> np.ndarray:
+        """Return the number of incoming neighbors for each node.
 
+        This counts only nodes that have edges pointing to the specified nodes
+        (i.e., predecessors).
 
-# This caches the outputs of _get_cached_graph_subtype
-# to avoid recompiling the same graph type multiple times.
-# it allows `type(Graph('uint64')) is type(Graph('uint64'))`
-_CLS_CACHE: dict[str, tuple[type, type[GraphBase]]] = {}
+        Parameters
+        ----------
+        nodes : np.ndarray
+            Array of node identifiers to count incoming neighbors for.
 
+        Returns
+        -------
+        np.ndarray
+            Array of incoming neighbor counts for each node in the input array.
+        """
+        return self._cgraph.num_in_neighbors(nodes)
 
-def _get_cached_graph_subtype(
-    cls: type[GraphBase],
-    node_dtype: str,
-    node_attr_dtypes: Mapping[str, str] | None = None,
-    edge_attr_dtypes: Mapping[str, str] | None = None,
-) -> tuple[type[CGraph], type[GraphBase]]:
-    _hash = _hash_args((node_dtype, node_attr_dtypes or {}, edge_attr_dtypes or {}))
-    _hash += str(hash(cls))
-    if _hash not in _CLS_CACHE:
-        directed = issubclass(cls, DiGraph)
-        # dynamically compile a specialized C++ implementation of the graph
-        # tailored to the user's specific type requirements.
-        CGraph = _compile_graph(
-            node_dtype=node_dtype,
-            node_attr_dtypes=node_attr_dtypes,
-            edge_attr_dtypes=edge_attr_dtypes,
-            directed=directed,
-        )
-        SubClass = type(cls.__name__, (cls, CGraph), {})
-        # create a new class that inherits from both the base class
-        # and the compiled c++ implementation
-        _CLS_CACHE[_hash] = (CGraph, SubClass)
+    def num_out_neighbors(self, nodes: np.ndarray) -> np.ndarray:
+        """Return the number of outgoing neighbors for each node.
 
-    return _CLS_CACHE[_hash]
+        This counts only nodes that the specified nodes
+        have edges pointing to (i.e., successors).
 
+        Parameters
+        ----------
+        nodes : np.ndarray
+            Array of node identifiers to count outgoing neighbors for.
 
-if TYPE_CHECKING:
+        Returns
+        -------
+        np.ndarray
+            Array of outgoing neighbor counts for each node in the input array.
+        """
+        return self._cgraph.num_out_neighbors(nodes)
 
-    class GraphBase(CGraph):
-        """Base class for undirected graph instances."""
+    @overload
+    def in_edges(
+        self, node: Any = ..., data: Literal[True] = ...
+    ) -> Iterator[tuple[tuple, Any]]: ...
+    @overload
+    def in_edges(
+        self, node: Any = ..., data: Literal[False] = ...
+    ) -> Iterator[tuple]: ...
+    def in_edges(self, node: Any = None, data: bool = False) -> Iterator[tuple]:
+        """Iterate over incoming edges to a node.
 
-        node_attrs: NodeAttrs
-        edge_attrs: EdgeAttrs
-        node_dtype: str
-        node_attr_dtypes: Mapping[str, str]
-        edge_attr_dtypes: Mapping[str, str]
-        directed: bool
+        Only edges directed toward the specified node are yielded.
 
-        def __init__(
-            self,
-            node_dtype: str,
-            node_attr_dtypes: Mapping[str, str] | None = None,
-            edge_attr_dtypes: Mapping[str, str] | None = None,
-            directed: bool = False,
-        ): ...
+        Parameters
+        ----------
+        node : Any
+            The target node to find incoming edges for.
+        data : bool
+            If True, yield (edge, edge_data) tuples. If False, yield
+            only edge tuples.
 
-    class Graph(GraphBase, CGraph):
-        """Base class for undirected graph instances."""
+        Yields
+        ------
+        tuple or tuple[tuple, Any]
+            If `data=False`: tuples of (source_node, target_node) representing
+            incoming edges where target_node is the specified node.
+            If `data=True`: tuples of ((source_node, target_node), edge_data)
+            where edge_data provides access to edge attributes.
+        """
+        return self._cgraph.in_edges(node, data)
 
-    class DiGraph(GraphBase, CDiGraph):
-        """Base class for directed graph instances."""
+    def in_edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray:
+        """Get all incoming edges to the specified nodes.
 
+        This method provides fast access to incoming edges for an array
+        of nodes. Edges between nodes in the input array will be reported
+        multiple times if both source and target are in the array.
 
-else:
+        Parameters
+        ----------
+        nodes : np.ndarray
+            Array of node identifiers to find incoming edges for.
 
-    class GraphBase:
-        """Base class for compiled graph instances."""
+        Returns
+        -------
+        np.ndarray
+            2D array of shape (n_edges, 2) where each row contains
+            [source_node, target_node] representing an incoming edge
+            to one of the specified nodes.
+        """
+        return self._cgraph.in_edges_by_nodes(nodes)
 
-        def __new__(
-            cls,
-            node_dtype: str,
-            node_attr_dtypes: Mapping[str, str] | None = None,
-            edge_attr_dtypes: Mapping[str, str] | None = None,
-            directed: bool | None = None,
-            *args: Any,
-            **kwargs: Any,
-        ) -> Self:
-            if directed is not None:
-                warnings.warn(
-                    "The 'directed' argument is deprecated and will be removed in "
-                    "future versions. Use the 'DiGraph' class for directed graphs.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                cls = DiGraph if directed else Graph
+    @overload
+    def out_edges(
+        self, node: Any = ..., data: Literal[True] = ...
+    ) -> Iterator[tuple[tuple, Any]]: ...
+    @overload
+    def out_edges(
+        self, node: Any = ..., data: Literal[False] = ...
+    ) -> Iterator[tuple]: ...
+    def out_edges(self, node: Any = None, data: bool = False) -> Iterator[tuple]:
+        """Iterate over outgoing edges from a node.
 
-            # determine the class to use based on the base class
-            CGraph, GraphType = _get_cached_graph_subtype(
-                cls=cls,
-                node_dtype=node_dtype,
-                node_attr_dtypes=node_attr_dtypes,
-                edge_attr_dtypes=edge_attr_dtypes,
-            )
+        Only edges directed away from the specified node are yielded.
 
-            # create and initialize the instance
-            return CGraph.__new__(GraphType)
+        Parameters
+        ----------
+        node : Any
+            The source node to find outgoing edges for.
+        data : bool
+            If True, yield (edge, edge_data) tuples. If False, yield
+            only edge tuples.
 
-        def __init__(
-            self,
-            node_dtype: str,
-            node_attr_dtypes: Mapping[str, str] | None = None,
-            edge_attr_dtypes: Mapping[str, str] | None = None,
-            directed: bool = False,
-        ):
-            super().__init__()
-            self.node_dtype = node_dtype
-            self.node_attr_dtypes = node_attr_dtypes or {}
-            self.edge_attr_dtypes = edge_attr_dtypes or {}
-            self.directed = directed
+        Yields
+        ------
+        tuple or tuple[tuple, Any]
+            If `data=False`: tuples of (source_node, target_node) representing
+            outgoing edges where source_node is the specified node.
+            If `data=True`: tuples of ((source_node, target_node), edge_data)
+            where edge_data provides access to edge attributes.
+        """
+        return self._cgraph.out_edges(node, data)
 
-            self.node_attrs = NodeAttrs(self)
-            self.edge_attrs = EdgeAttrs(self)
+    def out_edges_by_nodes(self, nodes: np.ndarray) -> np.ndarray:
+        """Get all outgoing edges from the specified nodes.
 
-    class Graph(GraphBase):
-        """Base class for undirected graph instances."""
+        This method provides fast access to outgoing edges for an array
+        of nodes. Edges between nodes in the input array will be reported
+        multiple times if both source and target are in the array.
 
-    class DiGraph(GraphBase):
-        """Base class for directed graph instances."""
+        Parameters
+        ----------
+        nodes : np.ndarray
+            Array of node identifiers to find outgoing edges for.
 
-
-class NodeAttrsView:
-    def __init__(self, graph, nodes):
-        super().__setattr__("graph", graph)
-        for name in graph.node_attr_dtypes.keys():
-            super().__setattr__(
-                f"get_attr_{name}", getattr(graph, f"get_nodes_data_{name}")
-            )
-            super().__setattr__(
-                f"set_attr_{name}", getattr(graph, f"set_nodes_data_{name}")
-            )
-
-        if nodes is not None and not isinstance(nodes, np.ndarray):
-            # nodes is not an ndarray, can it be converted into one?
-            try:
-                # does it have a length?
-                _ = len(nodes)
-                # if so, convert to ndarray
-                nodes = np.array(nodes, dtype=graph.node_dtype)
-            except Exception:
-                # must be a single node
-                for name in graph.node_attr_dtypes.keys():
-                    super().__setattr__(
-                        f"set_attr_{name}", getattr(graph, f"set_node_data_{name}")
-                    )
-                    super().__setattr__(
-                        f"get_attr_{name}", getattr(graph, f"get_node_data_{name}")
-                    )
-
-        # at this point, nodes is either
-        # 1. a numpy array
-        # 2. a scalar (python or numpy)
-        # 3. None
-        super().__setattr__("nodes", nodes)
-
-    def __getattr__(self, name: str) -> np.ndarray:
-        if name in self.graph.node_attr_dtypes:
-            return getattr(self, f"get_attr_{name}")(self.nodes)
-        else:
-            raise AttributeError(name)
-
-    def __setattr__(self, name, values):
-        if name in self.graph.node_attr_dtypes:
-            return getattr(self, f"set_attr_{name}")(self.nodes, values)
-        else:
-            return super().__setattr__(name, values)
-
-    def __iter__(self):
-        # TODO: shouldn't be possible if nodes is a single node
-        yield from self.graph.nodes_data(self.nodes)
-
-
-class EdgeAttrsView:
-    graph: GraphBase
-    edges: np.ndarray | tuple[float, float] | None
-
-    def __init__(self, graph: GraphBase, edges: np.ndarray | Iterable | None) -> None:
-        super().__setattr__("graph", graph)
-        for name in graph.edge_attr_dtypes:
-            super().__setattr__(
-                f"get_attr_{name}", getattr(graph, f"get_edges_data_{name}")
-            )
-            super().__setattr__(
-                f"set_attr_{name}", getattr(graph, f"set_edges_data_{name}")
-            )
-
-        # edges types we support:
-        #
-        # 1. edges = None                   all edges           leave as is
-        # 2. edges = iteratible of 2-tuples selected edges      to (n,2) ndarray
-        # 3. edges = iteratible of 2-lists  selected edges      to (n,2) ndarray
-        # 4. edges = (n,2) ndarray          selected edges      leave as is
-        # 5. edges = 2-tuple                a single edge       leave as is
-        # 6. edges = (2,) ndarray           a single edge       to 2-tuple
-
-        if edges is not None:
-            if isinstance(edges, np.ndarray):
-                if len(edges) == 2 and len(edges.shape) == 1:
-                    # case 6
-                    edges = tuple(edges)
-                else:
-                    # case 4 with multiple edges
-                    edges = edges.astype(graph.node_dtype)
-            elif isinstance(edges, tuple):
-                # case 5
-                assert len(edges) == 2, "Single edges should be given as a 2-tuple"
-            else:
-                # edges should be an iteratable
-                try:
-                    # does it have a length?
-                    len(edges)  # type: ignore
-                    # case 2 and 3
-                    edges = np.array(edges, dtype=graph.node_dtype)
-                except Exception as e:  # pragma: no cover
-                    raise RuntimeError(
-                        f"Can not handle edges type {type(edges)}"
-                    ) from e
-
-        if isinstance(edges, np.ndarray):
-            if len(edges) == 0:
-                edges = edges.reshape((0, 2))
-            assert edges.shape[1] == 2, "Edge arrays should have shape (n, 2)"  # type: ignore
-            edges = np.ascontiguousarray(edges.T)  # type: ignore
-        elif isinstance(edges, tuple):
-            # a single edge
-            for name in graph.edge_attr_dtypes.keys():
-                super().__setattr__(
-                    f"get_attr_{name}", getattr(graph, f"get_edge_data_{name}")
-                )
-                super().__setattr__(
-                    f"set_attr_{name}", getattr(graph, f"set_edge_data_{name}")
-                )
-
-        # at this point, edges is either
-        # 1. a nx2 numpy array
-        # 2. a 2-tuple of scalars (python or numpy)
-        # 3. None
-        super().__setattr__("edges", edges)
-
-    def __getattr__(self, name: str) -> np.ndarray:
-        if name in self.graph.edge_attr_dtypes:
-            if self.edges is not None:
-                return getattr(self, f"get_attr_{name}")(self.edges[0], self.edges[1])
-            else:
-                return getattr(self, f"get_attr_{name}")(None, None)
-        else:
-            raise AttributeError(name)
-
-    def __setattr__(self, name, values):
-        if name in self.graph.edge_attr_dtypes:
-            return getattr(self, f"set_attr_{name}")(
-                self.edges[0], self.edges[1], values
-            )
-        else:
-            return super().__setattr__(name, values)
-
-    def __iter__(self):
-        # TODO: shouldn't be possible if edges is a single edge
-        yield from self.graph.edges_data(self.edges)
-
-
-class NodeAttrs(NodeAttrsView):
-    def __init__(self, graph: GraphBase) -> None:
-        super().__init__(graph, nodes=None)
-
-    def __getitem__(self, nodes) -> NodeAttrsView:
-        return NodeAttrsView(self.graph, nodes)
-
-
-class EdgeAttrs(EdgeAttrsView):
-    def __init__(self, graph: GraphBase) -> None:
-        super().__init__(graph, edges=None)
-
-    def __getitem__(self, edges) -> EdgeAttrsView:
-        return EdgeAttrsView(self.graph, edges)
+        Returns
+        -------
+        np.ndarray
+            2D array of shape (n_edges, 2) where each row contains
+            [source_node, target_node] representing an outgoing edge
+            from one of the specified nodes.
+        """
+        return self._cgraph.out_edges_by_nodes(nodes)

@@ -4,9 +4,10 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
-from ._dtypes import DType
+from spatial_graph._dtypes import DType
+from spatial_graph._rtree import LineRTree, PointRTree
+
 from ._graph.graph import DiGraph, Graph, GraphBase
-from ._rtree import LineRTree, PointRTree
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -30,13 +31,13 @@ class SpatialGraphBase(GraphBase):
                 f"position attribute {position_attr!r} not defined in "
                 "'node_attr_dtypes'"
             )
-        super().__init__(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
+        super().__init__(node_dtype, node_attr_dtypes, edge_attr_dtypes)
 
         self.ndims = ndims
         self.position_attr = position_attr
         self.coord_dtype = DType(node_attr_dtypes[position_attr]).base
-        self._node_rtree: Any = PointRTree(node_dtype, self.coord_dtype, ndims)
-        self._edge_rtree: Any = LineRTree(f"{node_dtype}[2]", self.coord_dtype, ndims)
+        self._node_rtree = PointRTree(node_dtype, self.coord_dtype, ndims)
+        self._edge_rtree = LineRTree(f"{node_dtype}[2]", self.coord_dtype, ndims)
 
     def add_node(self, node: Any, *data: Any, **kwargs: Any) -> int:
         position = self._get_position(kwargs)
@@ -68,20 +69,16 @@ class SpatialGraphBase(GraphBase):
         return self._node_rtree.bounding_box()
 
     def query_nodes_in_roi(self, roi):
-        return self._node_rtree.search(roi[0], roi[1])
+        return self._node_rtree._ctree.search(roi[0], roi[1])
 
     def query_edges_in_roi(self, roi):
-        return self._edge_rtree.search(roi[0], roi[1])
+        return self._edge_rtree._ctree.search(roi[0], roi[1])
 
     def query_nearest_nodes(self, point, k, return_distances=False):
-        return self._node_rtree.nearest(point, k, return_distances)
+        return self._node_rtree._ctree.nearest(point, k, return_distances)
 
     def query_nearest_edges(self, point, k, return_distances=False):
-        return self._edge_rtree.nearest(point, k, return_distances)
-
-    @property
-    def nodes(self):
-        return super().nodes()
+        return self._edge_rtree._ctree.nearest(point, k, return_distances)
 
     @property
     def edges(self):

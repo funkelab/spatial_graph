@@ -128,7 +128,7 @@ extern inline coord_t distance(
         lines = np.array([line], dtype=self.item_dtype.base)
         starts = start[np.newaxis]
         ends = end[np.newaxis]
-        return self.insert_bb_items(lines, starts, ends)
+        return self._ctree.insert_bb_items(lines, starts, ends)
 
     def insert_lines(self, lines, starts, ends):
         """Insert a list of lines.
