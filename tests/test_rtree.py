@@ -1,10 +1,10 @@
 import numpy as np
 
-from spatial_graph import LineRTree, PointRTree
+import spatial_graph as sg
 
 
 def test_search():
-    rtree = PointRTree("uint64", "double", 2)
+    rtree = sg.PointRTree("uint64", "double", 2)
     for i in range(100):
         rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
@@ -20,7 +20,7 @@ def test_search():
 
 
 def test_delete():
-    rtree = PointRTree("uint64", "double", 2)
+    rtree = sg.PointRTree("uint64", "double", 2)
     for i in range(100):
         rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
@@ -34,7 +34,7 @@ def test_delete():
 
 
 def test_nearest():
-    rtree = PointRTree("uint64", "double", 2)
+    rtree = sg.PointRTree("uint64", "double", 2)
     for i in range(100):
         rtree.insert_point_item(i, np.array([i, i], dtype="float64"))
 
@@ -50,7 +50,7 @@ def test_nearest():
     assert list(points) == list(range(100))
 
     # ask an empty tree
-    rtree = PointRTree("uint64", "double", 3)
+    rtree = sg.PointRTree("uint64", "double", 3)
     points = rtree.nearest(np.array([0.0, 0.0, 0.0]), k=3)
     assert len(points) == 0
 
@@ -70,7 +70,7 @@ def test_nearest():
 
 
 def test_array_item():
-    rtree = PointRTree("uint64[3]", "double", 2)
+    rtree = sg.PointRTree("uint64[3]", "double", 2)
     for i in range(100):
         rtree.insert_point_item(
             np.array([i, i * 2, i * 3], dtype="uint64"),
@@ -79,7 +79,7 @@ def test_array_item():
 
 
 def test_line_rtree():
-    line_rtree = LineRTree("uint64[2]", "double", 2)
+    line_rtree = sg.LineRTree("uint64[2]", "double", 2)
 
     line_rtree.insert_lines(
         np.array(
@@ -112,7 +112,7 @@ def test_line_rtree():
 
 
 def test_line_rtree_nearest():
-    line_rtree = LineRTree("uint64[2]", "double", 2)
+    line_rtree = sg.LineRTree("uint64[2]", "double", 2)
 
     line_rtree.insert_lines(
         np.array(
@@ -153,7 +153,7 @@ def test_line_rtree_nearest():
     # pick the correct line that is closer to point, even though the bb is not
     # the closest one
 
-    line_rtree = LineRTree("uint64[2]", "double", 2)
+    line_rtree = sg.LineRTree("uint64[2]", "double", 2)
 
     line_rtree.insert_lines(
         np.array(
@@ -211,7 +211,7 @@ def test_line_rtree_nearest():
 
 
 def test_line_rtree_delete():
-    line_rtree = LineRTree("uint64[2]", "double", 2)
+    line_rtree = sg.LineRTree("uint64[2]", "double", 2)
 
     line_rtree.insert_lines(
         np.array(
@@ -245,7 +245,7 @@ def test_line_rtree_delete():
     assert lines[0, 0] == 2
     assert lines[0, 1] == 3
 
-    line_rtree = LineRTree("uint64[2]", "double", 2)
+    line_rtree = sg.LineRTree("uint64[2]", "double", 2)
 
     np.random.seed(42)
     ids = np.random.randint(0, 1e10, size=(10_000, 2), dtype="uint64")

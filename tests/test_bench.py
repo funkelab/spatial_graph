@@ -3,8 +3,7 @@ import sys
 import numpy as np
 import pytest
 
-from spatial_graph import SpatialGraph
-from spatial_graph._spatial_graph import SpatialDiGraph
+import spatial_graph as sg
 
 # either run this file directly or with pytest --codspeed
 if all(x not in {"--codspeed", "tests/test_bench.py"} for x in sys.argv):
@@ -18,21 +17,14 @@ def _make_graph(
     node_dtype="uint64",
     node_attr_dtypes=None,
     edge_attr_dtypes=None,
-    directed=False,
     n_nodes=100_000,
 ):
     """Helper to create a SpatialGraph instance with default parameters."""
-    if node_attr_dtypes is None:
-        node_attr_dtypes = {"position": "double[3]"}
-    if edge_attr_dtypes is None:
-        edge_attr_dtypes = {"score": "float32"}
-
-    cls = SpatialGraph if not directed else SpatialDiGraph
-    graph = cls(
+    graph = sg.create_graph(
         ndims=ndims,
         node_dtype=node_dtype,
-        node_attr_dtypes=node_attr_dtypes,
-        edge_attr_dtypes=edge_attr_dtypes,
+        node_attr_dtypes=node_attr_dtypes or {"position": "double[3]"},
+        edge_attr_dtypes=edge_attr_dtypes or {"score": "float32"},
         position_attr="position",
     )
     nodes = np.arange(n_nodes, dtype="uint64")

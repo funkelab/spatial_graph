@@ -4,7 +4,7 @@ import warnings
 from typing import TYPE_CHECKING, Literal, overload
 
 from ._graph import DiGraph, Graph
-from ._spatial_graph import SpatialDiGraph, SpatialGraph
+from ._graph.spatial_graph import SpatialDiGraph, SpatialGraph
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
