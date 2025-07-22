@@ -30,7 +30,7 @@ class SpatialGraphBase(GraphBase):
                 f"position attribute {position_attr!r} not defined in "
                 "'node_attr_dtypes'"
             )
-        super().__init__(node_dtype, node_attr_dtypes, edge_attr_dtypes, directed)
+        super().__init__(node_dtype, node_attr_dtypes, edge_attr_dtypes)
 
         self.ndims = ndims
         self.position_attr = position_attr
