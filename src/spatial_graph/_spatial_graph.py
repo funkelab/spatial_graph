@@ -7,7 +7,7 @@ import numpy as np
 from spatial_graph._dtypes import DType
 from spatial_graph._rtree import LineRTree, PointRTree
 
-from .graph import DiGraph, Graph, GraphBase
+from ._graph.graph import DiGraph, Graph, GraphBase
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

@@ -7,8 +7,8 @@ except PackageNotFoundError:  # pragma: no cover
 
 
 from ._graph import DiGraph, Graph, GraphBase
-from ._graph.spatial_graph import SpatialDiGraph, SpatialGraph, SpatialGraphBase
 from ._rtree import LineRTree, PointRTree
+from ._spatial_graph import SpatialDiGraph, SpatialGraph, SpatialGraphBase
 from ._util import create_graph
 
 __all__ = [
