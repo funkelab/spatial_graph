@@ -157,7 +157,7 @@ void heapify_down(struct priority_queue* queue, size_t index) {
 bool enqueue(struct priority_queue* queue, struct element element) {
 	if (queue->size == queue->capacity) {
 		queue->capacity *= 2;
-		queue->elements = realloc(queue->elements, sizeof(struct element) * queue->capacity);
+		queue->elements = (struct element*)realloc(queue->elements, sizeof(struct element) * queue->capacity);
 		if (!queue->elements)
 			return false;
 	}
@@ -175,7 +175,7 @@ struct element dequeue(struct priority_queue* queue) {
 	// reclaim some memory when the queue is shrinking
 	if (queue->size < queue->capacity/4) {
 		queue->capacity /= 2;
-		struct element *elements = realloc(queue->elements, sizeof(struct element) * queue->capacity);
+		struct element *elements = (struct element*)realloc(queue->elements, sizeof(struct element) * queue->capacity);
 		if (!elements) {
 			queue->capacity *= 2;
 		} else {
@@ -908,7 +908,6 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 		if (!rect_contains(&node->rects[h], ir)) {
 			continue;
 		}
-		struct rect crect = node->rects[h];
 		cow_node_or(node->nodes[h], return false);
 		if (!node_delete(tr, &node->rects[h], node->nodes[h], ir, item, depth+1,
 			removed, shrunk, compare, udata))
@@ -919,6 +918,7 @@ static bool node_delete(struct rtree *tr, struct rect *nr, struct node *node,
 			continue;
 		}
 	removed:
+		struct rect crect = node->rects[h];
 		if (node->nodes[h]->count == 0) {
 			// underflow
 			node_free(tr, node->nodes[h]);
@@ -995,7 +995,7 @@ int rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max,
 	return rtree_delete0(tr, min, max, item, NULL, NULL);
 }
 
-int rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
+bool rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
 	const coord_t *max, const item_t item,
 	int (*compare)(const item_t a, const item_t b, void *udata),
 	void *udata)
@@ -1005,7 +1005,7 @@ int rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
 
 struct rtree *rtree_clone(struct rtree *tr) {
 	if (!tr) return NULL;
-	struct rtree *tr2 = tr->malloc(sizeof(struct rtree));
+	struct rtree *tr2 = (struct rtree*)tr->malloc(sizeof(struct rtree));
 	if (!tr2) return NULL;
 	memcpy(tr2, tr, sizeof(struct rtree));
 	if (tr2->root) rc_fetch_add(&tr2->root->rc, 1);

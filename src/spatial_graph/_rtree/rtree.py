@@ -15,6 +15,45 @@ else:
     EXTRA_COMPILE_ARGS = ["-O3", "-Wno-unreachable-code"]
 
 
+def create_wrapper(cls, item_dtype, coord_dtype, dims):
+    item_dtype = DType(item_dtype)
+    coord_dtype = DType(coord_dtype)
+
+    ############################################
+    # create wrapper from template and compile #
+    ############################################
+
+    src_dir = Path(__file__).parent
+    wrapper_template = Template(
+        file=str(src_dir / "wrapper_template.cpp"),
+        compilerSettings={"directiveStartToken": "%"},
+    )
+    wrapper_template.item_dtype = item_dtype
+    wrapper_template.coord_dtype = coord_dtype
+    wrapper_template.dims = dims
+    wrapper_template.c_distance_function = cls.c_distance_function
+    wrapper_template.pyx_item_t_declaration = cls.pyx_item_t_declaration
+    wrapper_template.c_item_t_declaration = cls.c_item_t_declaration
+    wrapper_template.c_converter_functions = cls.c_converter_functions
+    wrapper_template.c_equal_function = cls.c_equal_function
+
+    wrapper = witty.compile_nanobind(
+        str(wrapper_template),
+        source_files=[
+            src_dir / "src" / "rtree.h",
+            src_dir / "src" / "rtree.c",
+            src_dir / "src" / "config.h",
+        ],
+        extra_compile_args=EXTRA_COMPILE_ARGS,
+        include_dirs=[str(src_dir)],
+        language="c++",
+        quiet=False,  # quiet=True,
+        define_macros=DEFINE_MACROS,
+    )
+
+    return wrapper
+
+
 class RTree:
     """A generic RTree implementation, compiled on-the-fly during
     instantiation.
@@ -176,41 +215,8 @@ class RTree:
         coord_dtype,
         dims,
     ):
-        item_dtype = DType(item_dtype)
-        coord_dtype = DType(coord_dtype)
-
-        ############################################
-        # create wrapper from template and compile #
-        ############################################
-
-        src_dir = Path(__file__).parent
-        wrapper_template = Template(
-            file=str(src_dir / "wrapper_template.pyx"),
-            compilerSettings={"directiveStartToken": "%"},
-        )
-        wrapper_template.item_dtype = item_dtype
-        wrapper_template.coord_dtype = coord_dtype
-        wrapper_template.dims = dims
-        wrapper_template.c_distance_function = cls.c_distance_function
-        wrapper_template.pyx_item_t_declaration = cls.pyx_item_t_declaration
-        wrapper_template.c_item_t_declaration = cls.c_item_t_declaration
-        wrapper_template.c_converter_functions = cls.c_converter_functions
-        wrapper_template.c_equal_function = cls.c_equal_function
-
-        wrapper = witty.compile_module(
-            str(wrapper_template),
-            source_files=[
-                src_dir / "src" / "rtree.h",
-                src_dir / "src" / "rtree.c",
-                src_dir / "src" / "config.h",
-            ],
-            extra_compile_args=EXTRA_COMPILE_ARGS,
-            include_dirs=[str(src_dir)],
-            language="c",
-            quiet=True,
-            define_macros=DEFINE_MACROS,
-        )
-        RTreeType = type(cls.__name__, (cls, wrapper.RTree), {})
+        wrapper = create_wrapper(cls, item_dtype, coord_dtype, dims)
+        RTreeType = type(cls.__name__, (wrapper.RTree,), cls.__dict__.copy())
         return wrapper.RTree.__new__(RTreeType)
 
     def __init__(self, item_dtype, coord_dtype, dims):
