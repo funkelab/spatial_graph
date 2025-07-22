@@ -46,7 +46,7 @@ def _compile_tree(
     cls: type[RTree], item_dtype: str, coord_dtype: str, dims: int
 ) -> type:
     wrapper = _build_wrapper(cls, item_dtype, coord_dtype, dims)
-    module = witty.compile_module(
+    module = witty.compile_cython(
         wrapper,
         source_files=[
             SRC_DIR / "src" / "rtree.h",
