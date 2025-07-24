@@ -37,6 +37,7 @@ RUN set -eux; \
     *)         echo "Unsupported arch: $arch"; exit 1 ;; \
     esac; \
     micromamba create -y -n test-env -c conda-forge python=3.12 pip gxx "$gxx_pkg"=15.*
+RUN micromamba run -n test-env pip install -e . --group test
 
 SHELL ["micromamba", "run", "-n", "test-env", "/bin/bash", "-o", "pipefail", "-c"]
 
