@@ -1,15 +1,9 @@
 from libc.stdint cimport *
+from libcpp cimport bool
 import numpy as np
-
-
-ctypedef int bool
 
 cdef extern from *:
     """
-    typedef int bool;
-    #define false 0
-    #define true 1
-
     %if $c_distance_function
     #define KNN_USE_EXACT_DISTANCE
     %end if
@@ -152,7 +146,7 @@ cdef pyx_items_t memview_to_pyx_items_t($item_dtype.to_pyxtype(add_dim=True) ite
     %end if
 
 
-cdef bint count_iterator(
+cdef bool count_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
         const item_t item,
@@ -174,7 +168,7 @@ cdef init_search_results_from_memview(search_results* r, $item_dtype.to_pyxtype(
     r.items = memview_to_pyx_items_t(items)
 
 
-cdef bint search_iterator(
+cdef bool search_iterator(
         const coord_t* bb_min,
         const coord_t* bb_max,
         const item_t item,
@@ -203,7 +197,7 @@ cdef init_nearest_results_from_memview(nearest_results* r,
     r.distances = &distances[0] if distances is not None else NULL
 
 
-cdef bint nearest_iterator(
+cdef bool nearest_iterator(
         const item_t item,
         coord_t distance,
         void* udata

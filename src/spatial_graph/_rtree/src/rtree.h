@@ -83,8 +83,8 @@ int rtree_delete(struct rtree *tr, const coord_t *min, const coord_t *max, const
 // rectangle, and perform a comparison of its data to the provided data using
 // a compare function. The first item that is found is deleted.
 //
-// Returns false if the system is out of memory.
-bool rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
+// Returns the number of deleted items (0 or 1) or -1 if an OOM error occured.
+int rtree_delete_with_comparator(struct rtree *tr, const coord_t *min,
 	const coord_t *max, const item_t item,
 	int (*compare)(const item_t a, const item_t b, void *udata),
 	void *udata);
