@@ -8,6 +8,8 @@ cdef extern from *:
     #define KNN_USE_EXACT_DISTANCE
     %end if
     #define DIMS $dims
+    #include <stdbool.h>
+    #include <string.h>
 
     typedef $coord_dtype.to_pyxtype() coord_t;
     typedef $item_dtype.base_c_type item_base_t;

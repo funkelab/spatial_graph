@@ -6,6 +6,7 @@
 #define RTREE_H
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include "config.h"
 
 // rtree_new returns a new rtree
