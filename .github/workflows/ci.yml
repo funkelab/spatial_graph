@@ -95,7 +95,12 @@ jobs:
           files: "./dist/*"
 
   docker-test:
+    name: Docker Test gxx${{ matrix.gxx_major }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gxx_major: [14, 15]
 
     steps:
       - name: Checkout code
@@ -103,5 +108,5 @@ jobs:
 
       - name: Build and test Docker image
         run: |
-          docker build -t spatial_graph .
+          docker build --build-arg GXX_MAJOR=${{ matrix.gxx_major }} -t spatial_graph .
           docker run --rm spatial_graph
