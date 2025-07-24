@@ -12,14 +12,18 @@ RUN apt-get update && \
       git curl tar bzip2 ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+
+WORKDIR /app
+COPY . /app
+
 # auto-detect arch and grab the matching micromamba binary
 RUN set -eux; \
     arch="$(uname -m)"; \
     case "$arch" in \
-      x86_64)          url_arch=linux-64;      gxx_pkg=gxx_linux-64 ;; \
-      aarch64|arm64)   url_arch=linux-aarch64; gxx_pkg=gxx_linux-aarch64 ;; \
-      ppc64le)         url_arch=linux-ppc64le; gxx_pkg=gxx_linux-ppc64le ;; \
-      *)               echo "Unsupported arch: $arch"; exit 1 ;; \
+        x86_64)          url_arch=linux-64;      gxx_pkg=gxx_linux-64 ;; \
+        aarch64|arm64)   url_arch=linux-aarch64; gxx_pkg=gxx_linux-aarch64 ;; \
+        ppc64le)         url_arch=linux-ppc64le; gxx_pkg=gxx_linux-ppc64le ;; \
+        *)               echo "Unsupported arch: $arch"; exit 1 ;; \
     esac; \
     curl -Ls "https://micro.mamba.pm/api/micromamba/$url_arch/latest" \
       | tar -xvj -C /usr/local/bin bin/micromamba; \
@@ -30,8 +34,6 @@ RUN set -eux; \
         python=3.12 pip gxx "${gxx_pkg}=${GXX_MAJOR}.*"; \
     micromamba run -n test-env pip install -e . --group test
 
-WORKDIR /app
-COPY . /app
 
 SHELL ["micromamba", "run", "-n", "test-env", "/bin/bash", "-o", "pipefail", "-c"]
 
