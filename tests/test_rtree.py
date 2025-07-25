@@ -60,7 +60,7 @@ def test_nearest():
         np.arange(10_000_000, dtype="uint64"),
         all_points,
     )
-    points = rtree.nearest(np.array([0.5, 0.5]), k=100_000)
+    points = rtree.nearest(np.array([0.5, 0.5, 0.5]), k=100_000)
     assert len(points) == 100_000
 
     # ensure that we find the right item in a big tree
