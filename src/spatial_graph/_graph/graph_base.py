@@ -76,7 +76,7 @@ def _compile_graph(
         edge_attr_dtypes=edge_attr_dtypes,
         directed=directed,
     )
-    wrapper = witty.compile_module(
+    wrapper = witty.compile_cython(
         wrapper_template,
         source_files=[str(SRC_DIR / "src" / "graph_lite.h")],
         extra_compile_args=EXTRA_COMPILE_ARGS,

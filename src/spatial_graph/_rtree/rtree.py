@@ -161,7 +161,7 @@ class RTree:
         """
         items = np.array([item], dtype=self.item_dtype.base)
         bb_mins = bb_min[np.newaxis, :]
-        bb_maxs = None if bb_max is None else bb_max[np.newaxis, :]
+        bb_maxs = bb_mins if bb_max is None else bb_max[np.newaxis, :]
         return self._ctree.delete_items(items, bb_mins, bb_maxs)
 
     def delete_items(self, items, bb_mins, bb_maxs=None):
@@ -183,6 +183,8 @@ class RTree:
                 Array of shape `(n, dims)`, the minimum/maximum points of the
                 bounding boxes per item to delete.
         """
+        if bb_maxs is None:
+            bb_maxs = bb_mins
         return self._ctree.delete_items(items, bb_mins, bb_maxs)
 
     def count(self, bb_min, bb_max):
@@ -222,7 +224,10 @@ class RTree:
                 `distances` contains the distance of each found item to the
                 query point.
         """
-        return self._ctree.nearest(point, k, return_distances)
+        if return_distances:
+            return self._ctree.nearest_with_distances(point, k)
+        else:
+            return self._ctree.nearest(point, k)
 
     def insert_bb_items(self, items, bb_mins, bb_maxs):
         """Insert items with bounding boxes.

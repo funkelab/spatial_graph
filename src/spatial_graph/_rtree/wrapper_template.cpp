@@ -1,109 +1,198 @@
+#include <array>
 #include <vector>
 #include <nanobind/ndarray.h>
 
-#define DIMS $dims
-%if $c_distance_function
-#define KNN_USE_EXACT_DISTANCE
-%end if
-
 namespace nb = nanobind;
 
+// number of spatial dimensions
+#define DIMS $dims
+
+/*********************
+ * TYPE DECLARATIONS *
+ *********************/
+
+// the base type of coordinates
 typedef $coord_dtype.base_c_type coord_t;
-typedef $item_dtype.base_c_type item_base_t;
+
+// the base type of item data
+typedef $item_dtype.base_c_type item_data_base_t;
+
+// the external representation of an item (referred to as item_data)
+%if $item_dtype.is_array
+	// for arrays
+	typedef std::array<item_data_base_t, $item_dtype.size> item_data_t;
+%else
+	// for scalars
+	typedef item_data_base_t item_data_t;
+%end if
+
+// the internal type of an item
+%if $c_item_t_declaration
+	// custom item_t declaration
+	$c_item_t_declaration
+%else
+	// default item_t declaration
+	%if $item_dtype.is_array
+		// for arrays
+		typedef struct item_t {
+			item_data_base_t data[$item_dtype.size];
+		} item_t;
+	%else
+		// for scalars
+		typedef item_data_base_t item_t;
+	%end if
+%end if
+
+// shape of arrays holding data for multiple items
+%if $item_dtype.is_array
+	using items_data_shape = nb::shape<-1, $item_dtype.size>;
+%else
+	using items_data_shape = nb::shape<-1>;
+%end if
+
+/*************
+ * FUNCTIONS *
+ *************/
+
+/* CONVERTERS */
+
+// item_t -> item_data_t and item_data_t -> item_t
+%if $c_converter_functions
+	// custom converter functions
+	$c_converter_functions
+%else
+	%if $item_dtype.is_array
+		// default converters for array item_t
+		inline item_t item_data_to_item(
+				item_data_base_t *item_data,
+				coord_t *min,
+				coord_t *max) {
+
+			item_t item;
+			memcpy(&item, item_data, sizeof(item_t));
+			return item;
+		}
+		inline void item_to_item_data(
+				const item_t& item,
+				item_data_t *item_data) {
+
+			memcpy(item_data, &item, sizeof(item_t));
+		}
+	%else
+		// default converters for scalar item_t
+		inline item_t item_data_to_item(
+				item_data_base_t *item_data,
+				coord_t *min,
+				coord_t *max) {
+
+			return (item_t)*item_data;
+		}
+		inline void item_to_item_data(
+				const item_t& item,
+				item_data_t *item_data) {
+
+			*item_data = static_cast<item_data_base_t>(item);
+		}
+	%end if
+%end if
+
+
+/* COMPARISON */
+
+%if $c_equal_function
+	// custom comparison function
+	$c_equal_function
+%else
+	// default comparison function
+	inline bool equal(const item_t a, const item_t b) {
+		%if $item_dtype.is_array
+			// for arrays
+			return memcmp(&a, &b, sizeof(item_t));
+		%else
+			// for scalars
+			return a == b;
+		%end if
+	}
+%end if
+
+/*******************
+ * RTREE C BACKEND *
+ *******************/
+
+/* DISTANCE */
+
+%if $c_distance_function
+	// if a custom distance function is used, use this instead of the default 
+	// bounding box distance function for kNN search
+	#define KNN_USE_EXACT_DISTANCE
+%end if
 
 extern "C"{
-
-
-	%if $item_dtype.is_array
-	typedef item_base_t pyx_item_t[$item_dtype.size];
-	%else
-	typedef item_base_t pyx_item_t;
-	%end if
-	typedef pyx_item_t* pyx_items_t;
-
-	%if $c_item_t_declaration
-	$c_item_t_declaration
-	%else
-	%if $item_dtype.is_array
-	typedef struct item_t {
-		item_base_t data[$item_dtype.size];
-	} item_t;
-	%else
-	typedef item_base_t item_t;
-	%end if
-	%end if
-
-	%if $c_equal_function
-	$c_equal_function
-	%else
-	inline bool equal(const item_t a, const item_t b) {
-	%if $item_dtype.is_array
-		return memcmp(&a, &b, sizeof(item_t));
-	%else
-		return a == b;
-	%end if
-	}
-	%end if
 
 	#include "src/rtree.h"
 	#include "src/rtree.c"
 
-	%if $c_converter_functions
-	$c_converter_functions
-	%else
-	%if $item_dtype.is_array
-	inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
-		item_t c_item;
-		memcpy(&c_item, *pyx_item, sizeof(item_t));
-		return c_item;
-	}
-	inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
-		memcpy(pyx_item, &c_item, sizeof(item_t));
-	}
-	%else
-	// default PYX<->C converters, just casting
-	inline item_t convert_pyx_to_c_item(pyx_item_t *pyx_item, coord_t *min, coord_t *max) {
-		return (item_t)*pyx_item;
-	}
-	inline void copy_c_to_pyx_item(const item_t c_item, pyx_item_t *pyx_item) {
-		memcpy(pyx_item, &c_item, sizeof(item_t));
-	}
-	%end if
-	%end if
-
-	%if $c_distance_function
-	$c_distance_function
-	%end if
-
 } // extern "C"
+
+%if $c_distance_function
+	// custom distance function for exact computation of distances to items
+	$c_distance_function
+%end if
 
 /************
  * TYPEDEFS *
  ************/
 
-using ItemsArray = nb::ndarray<
+using ItemsVec = std::vector<item_data_t>;
+using DistancesVec = std::vector<coord_t>;
+
+using Items = nb::ndarray<
 	nb::numpy,
-	item_base_t,
-	nb::shape<-1>,
+	item_data_base_t,
+	items_data_shape,
 	nb::c_contig
 >;
-using ItemsArrayObject = nb::detail::ndarray_object<
+using Distances = nb::ndarray<
 	nb::numpy,
-	item_base_t,
+	coord_t,
 	nb::shape<-1>,
 	nb::c_contig
 >;
 
-/**************
- * CONVERTERS *
- **************/
+using Point = nb::ndarray<
+	nb::numpy,
+	coord_t,
+	nb::shape<DIMS>,
+	nb::c_contig
+>;
+using Points = nb::ndarray<
+	nb::numpy,
+	coord_t,
+	nb::shape<-1, DIMS>,
+	nb::c_contig
+>;
 
-// default implementation for scalar item_t
-inline item_t create_rtree_item(item_base_t *item, coord_t *min, coord_t *max) {
-	return (item_t)*item;
-}
+/***************
+ * RTree CLASS *
+ ***************/
+
+// Keep a unique C++ RTree typename for each module, so that multiple RTrees can 
+// coexist. The name in the resulting python module will still be just RTree.
+#define RTree RTree_WITTY_MODULE_HASH
 
 class RTree {
+
+private:
+
+	// kNN search results
+	struct Results {
+		ItemsVec items;
+		DistancesVec distances;
+		size_t k;
+		bool return_distances;
+	};
+
+	rtree* _rtree;
 
 public:
 
@@ -116,37 +205,45 @@ public:
 	}
 
 	void insert_point_items(
-		nb::ndarray<item_base_t, nb::shape<-1>, nb::c_contig> items,
-		nb::ndarray<coord_t, nb::shape<-1, DIMS>, nb::c_contig> points) {
+		Items items,
+		Points points) {
 
-		for (size_t i = 0; i < items.size(); i++) {
+		for (size_t i = 0; i < items.shape(0); i++) {
 			rtree_insert(
 				_rtree,
 				&points(i, 0),
 				NULL,
-				create_rtree_item(&items(i), &points(i, 0), NULL)
+				%if $item_dtype.is_array
+					item_data_to_item(&items(i, 0), &points(i, 0), NULL)
+				%else
+					item_data_to_item(&items(i), &points(i, 0), NULL)
+				%end if
 			);
 		}
 	}
 
 	void insert_bb_items(
-		nb::ndarray<item_base_t, nb::shape<-1>, nb::c_contig> items,
-		nb::ndarray<coord_t, nb::shape<-1, DIMS>, nb::c_contig> bb_mins,
-		nb::ndarray<coord_t, nb::shape<-1, DIMS>, nb::c_contig> bb_maxs) {
+		Items items,
+		Points bb_mins,
+		Points bb_maxs) {
 
-		for (size_t i = 0; i < items.size(); i++) {
+		for (size_t i = 0; i < items.shape(0); i++) {
 			rtree_insert(
 				_rtree,
 				&bb_mins(i, 0),
 				&bb_maxs(i, 0),
-				create_rtree_item(&items(i), &bb_mins(i, 0), &bb_maxs(i, 0))
+				%if $item_dtype.is_array
+					item_data_to_item(&items(i, 0), &bb_mins(i, 0), &bb_maxs(i, 0))
+				%else
+					item_data_to_item(&items(i), &bb_mins(i, 0), &bb_maxs(i, 0))
+				%end if
 			);
 		}
 	}
 
 	size_t count(
-			nb::ndarray<coord_t, nb::shape<DIMS>, nb::c_contig> bb_min,
-			nb::ndarray<coord_t, nb::shape<DIMS>, nb::c_contig> bb_max) {
+			Point bb_min,
+			Point bb_max) {
 
 		auto count_iterator = [](
 			const coord_t* bb_min,
@@ -195,20 +292,20 @@ public:
 		);
 	}
 
-	typedef typename std::vector<item_t> Items;
-	typedef typename std::vector<coord_t> Distances;
+	Items search(
+			Point bb_min,
+			Point bb_max) {
 
-	ItemsArrayObject search(
-			nb::ndarray<coord_t, nb::shape<DIMS>, nb::c_contig> bb_min,
-			nb::ndarray<coord_t, nb::shape<DIMS>, nb::c_contig> bb_max) {
-
-		Items results;
+		ItemsVec* results = new ItemsVec();
 		auto search_iterator = [](
-			const coord_t *bb_min,
-			const coord_t *bb_max,
-			const item_t item,
-			void* results) {
-			static_cast<Items*>(results)->push_back(item);
+				const coord_t *bb_min,
+				const coord_t *bb_max,
+				const item_t item,
+				void* results) {
+
+			item_data_t item_data;
+			item_to_item_data(item, &item_data);
+			static_cast<ItemsVec*>(results)->push_back(item_data);
 			return true;
 		};
 
@@ -217,31 +314,35 @@ public:
 			bb_min.data(),
 			bb_max.data(),
 			search_iterator,
-			&results);
+			results);
 
-		return ItemsArray(results.data(), { results.size() }).cast();
+		nb::capsule results_owner(results, [](void* p) noexcept {
+			delete (ItemsVec*)p;
+		});
+
+		%if $item_dtype.is_array
+			return Items(results->data(), { results->size(), $item_dtype.size }, results_owner);
+		%else
+			return Items(results->data(), { results->size() }, results_owner);
+		%end if
 	}
 
-	ItemsArrayObject nearest(
-			nb::ndarray<coord_t, nb::shape<DIMS>, nb::c_contig> point,
+	Results* find_nearest(
+			Point point,
 			size_t k,
 			bool return_distances) {
 
-		struct Results {
-			Items items;
-			Distances distances;
-			size_t k;
-			bool return_distances;
-		};
-		Results results;
-		results.k = k;
-		results.return_distances = return_distances;
+		Results* results = new Results();
+		results->k = k;
+		results->return_distances = return_distances;
 		auto nearest_iterator = [](
 			const item_t item,
 			coord_t distance,
 			void* results) {
 			Results* r = static_cast<Results*>(results);
-			r->items.push_back(item);
+			item_data_t item_data;
+			item_to_item_data(item, &item_data);
+			r->items.push_back(item_data);
 			if (r->return_distances)
 				r->distances.push_back(distance);
 			return r->items.size() < r->k;
@@ -251,42 +352,91 @@ public:
 			_rtree,
 			point.data(),
 			nearest_iterator,
-			&results);
+			results);
 
-		// TODO
-		//if not all_good:
-			//raise RuntimeError("RTree nearest neighbor search ran out of memory.")
+		if (!all_good)
+			throw std::bad_alloc();
 
-		if (return_distances) {
-			// TODO
-			//return items[:results.size], distances[:results.size]
-		} else {
-			return ItemsArray(results.items.data(), { results.items.size() }).cast();
-		}
+		return results;
+	}
+
+	Items nearest(
+			Point point,
+			size_t k) {
+
+		Results* results = find_nearest(point, k, false);
+
+		nb::capsule results_owner(results, [](void* p) noexcept {
+			delete (Results*)p;
+		});
+
+		%if $item_dtype.is_array
+			Items items(
+				results->items.data(),
+				{ results->items.size(), $item_dtype.size },
+				results_owner);
+		%else
+			Items items(
+				results->items.data(),
+				{ results->items.size() },
+				results_owner);
+		%end if
+
+		return items;
+	}
+
+	nb::tuple nearest_with_distances(
+			Point point,
+			size_t k) {
+
+		Results* results = find_nearest(point, k, true);
+
+		nb::capsule results_owner(results, [](void* p) noexcept {
+			delete (Results*)p;
+		});
+
+		%if $item_dtype.is_array
+			Items items(
+				results->items.data(),
+				{ results->items.size(), $item_dtype.size },
+				results_owner);
+		%else
+			Items items(
+				results->items.data(),
+				{ results->items.size() },
+				results_owner);
+		%end if
+
+		Distances distances(
+			results->distances.data(),
+			{ results->distances.size() },
+			results_owner);
+
+		return nb::make_tuple(items, distances);
+
 	}
 
 	size_t delete_items(
-		ItemsArray items,
-		nb::ndarray<coord_t, nb::shape<-1, DIMS>, nb::c_contig> bb_mins,
-		nb::ndarray<coord_t, nb::shape<-1, DIMS>, nb::c_contig> bb_maxs) {
-
-		// TODO
-		//if bb_maxs is None:
-			//bb_maxs = bb_mins
-
-		//cdef pyx_items_t pyx_items = memview_to_pyx_items_t(items)
+		Items items,
+		Points bb_mins,
+		Points bb_maxs) {
 
 		size_t total_deleted = 0;
-		for (size_t i = 0; i < items.size(); i++) {
+		for (size_t i = 0; i < items.shape(0); i++) {
 			size_t num_deleted = rtree_delete(
 				_rtree,
 				&bb_mins(i, 0),
 				&bb_maxs(i, 0),
-				create_rtree_item(&items(i), &bb_mins(i, 0), &bb_maxs(i, 0))
+				%if $item_dtype.is_array
+					item_data_to_item(&items(i, 0), &bb_mins(i, 0), &bb_maxs(i, 0))
+				%else
+					item_data_to_item(&items(i), &bb_mins(i, 0), &bb_maxs(i, 0))
+				%end if
 			);
-			// TODO
-			//if (num_deleted == -1)
-				//raise RuntimeError("RTree delete ran out of memory.")
+
+			if (num_deleted < 0)
+				throw std::bad_alloc();
+
 			total_deleted += num_deleted;
 		}
 
@@ -297,11 +447,11 @@ public:
 
 		return rtree_count(_rtree);
 	}
-
-private:
-
-	rtree* _rtree;
 };
+
+/*************************
+ * NANOBIND REGISTRATION *
+ *************************/
 
 NB_MODULE(rtree, m) {
 	nb::class_<RTree>(m, "RTree")
@@ -313,6 +463,7 @@ NB_MODULE(rtree, m) {
 		.def("count", &RTree::count)
 		.def("search", &RTree::search)
 		.def("nearest", &RTree::nearest)
+		.def("nearest_with_distances", &RTree::nearest_with_distances)
 		.def("__len__", &RTree::__len__)
 	;
 }
