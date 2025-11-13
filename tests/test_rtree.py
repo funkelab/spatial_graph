@@ -68,6 +68,36 @@ def test_nearest():
         points = rtree.nearest(all_points[i], k=1)
         assert points[0] == i
 
+    # test ray search in a big tree
+
+    origin = np.array([0.1, 0.2, 0.5], dtype="double")
+    direction = np.array([0.9, 0.3, 0.0], dtype="double")
+    ray_points = np.array(
+        [origin + t * direction for t in np.arange(start=0, stop=1.0, step=0.01)]
+    )
+    num_ray_points = ray_points.shape[0]
+    ray_point_ids = np.arange(
+        start=len(rtree), stop=len(rtree) + num_ray_points, dtype="uint64"
+    )
+    # first query to get points close to ray
+    points_1, distances = rtree.nearest(
+        origin, direction, k=len(rtree), return_distances=True
+    )
+    points_1 = points_1[distances <= 1e-4]
+    # insert ray points (should be closer than furthest point in `points`)
+    rtree.insert_point_items(ray_point_ids, ray_points)
+    # second query to get all points close to ray again
+    points_2, distances = rtree.nearest(
+        origin,
+        direction,
+        k=len(rtree),
+        return_distances=True,
+    )
+    points_2 = points_2[distances <= 1e-4]
+    # points_2 should be points_1 plus the ray_points we added
+    a, b = sorted(points_2), sorted(points_1) + list(ray_point_ids)
+    np.testing.assert_array_equal(a, b)
+
 
 def test_array_item():
     rtree = sg.PointRTree("uint64[3]", "double", 2)
@@ -248,7 +278,7 @@ def test_line_rtree_delete():
     line_rtree = sg.LineRTree("uint64[2]", "double", 2)
 
     np.random.seed(42)
-    ids = np.random.randint(0, 1e10, size=(10_000, 2), dtype="uint64")
+    ids = np.random.randint(0, int(1e10), size=(10_000, 2), dtype="uint64")
     starts = np.random.random((10_000, 2)).astype("double")
     ends = np.random.random((10_000, 2)).astype("double")
 

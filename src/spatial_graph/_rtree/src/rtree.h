@@ -49,10 +49,11 @@ void rtree_search(const struct rtree *tr, const coord_t *min, const coord_t *max
 	bool (*iter)(const coord_t *min, const coord_t *max, const item_t item, void *udata),
 	void *udata);
 
-// Find the nearest neighbors to the given query point.
+// Find the nearest neighbors to the given query point (if direction is NULL)
+// or the given ray defined by point and direction.
 //
 // Returning false from the iter will stop the search.
-bool rtree_nearest(struct rtree *tr, const coord_t *point,
+bool rtree_nearest(struct rtree *tr, const coord_t *point, const coord_t *direction,
 	bool (*iter)(const item_t item, coord_t distance, void *udata),
 	void *udata);
 

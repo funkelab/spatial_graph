@@ -1,6 +1,7 @@
 #include <array>
 #include <vector>
 #include <nanobind/ndarray.h>
+#include <nanobind/stl/optional.h>
 
 namespace nb = nanobind;
 
@@ -329,6 +330,7 @@ public:
 
 	Results* find_nearest(
 			Point point,
+			std::optional<Point> direction,
 			size_t k,
 			bool return_distances) {
 
@@ -351,6 +353,7 @@ public:
 		bool all_good = rtree_nearest(
 			_rtree,
 			point.data(),
+			direction ? direction->data() : NULL,
 			nearest_iterator,
 			results);
 
@@ -362,9 +365,10 @@ public:
 
 	Items nearest(
 			Point point,
+			std::optional<Point> direction,
 			size_t k) {
 
-		Results* results = find_nearest(point, k, false);
+		Results* results = find_nearest(point, direction, k, false);
 
 		nb::capsule results_owner(results, [](void* p) noexcept {
 			delete (Results*)p;
@@ -387,9 +391,10 @@ public:
 
 	nb::tuple nearest_with_distances(
 			Point point,
+			std::optional<Point> direction,
 			size_t k) {
 
-		Results* results = find_nearest(point, k, true);
+		Results* results = find_nearest(point, direction, k, true);
 
 		nb::capsule results_owner(results, [](void* p) noexcept {
 			delete (Results*)p;
@@ -462,8 +467,8 @@ NB_MODULE(rtree, m) {
 		.def("bounding_box", &RTree::bounding_box)
 		.def("count", &RTree::count)
 		.def("search", &RTree::search)
-		.def("nearest", &RTree::nearest)
-		.def("nearest_with_distances", &RTree::nearest_with_distances)
+		.def("nearest", &RTree::nearest, nb::arg("point"), nb::arg("direction") = nb::none(), nb::arg("k") = 1)
+		.def("nearest_with_distances", &RTree::nearest_with_distances, nb::arg("point"), nb::arg("direction") = nb::none(), nb::arg("k") = 1)
 		.def("__len__", &RTree::__len__)
 	;
 }

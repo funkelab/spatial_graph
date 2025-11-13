@@ -205,7 +205,7 @@ class RTree:
         """
         return self._ctree.search(bb_min, bb_max)
 
-    def nearest(self, point, k=1, return_distances=False):
+    def nearest(self, point, direction=None, k=1, return_distances=False):
         """Find the nearest items to a given point.
 
         Args:
@@ -225,9 +225,9 @@ class RTree:
                 query point.
         """
         if return_distances:
-            return self._ctree.nearest_with_distances(point, k)
+            return self._ctree.nearest_with_distances(point, direction, k)
         else:
-            return self._ctree.nearest(point, k)
+            return self._ctree.nearest(point, direction, k)
 
     def insert_bb_items(self, items, bb_mins, bb_maxs):
         """Insert items with bounding boxes.

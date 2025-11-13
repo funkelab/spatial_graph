@@ -74,8 +74,11 @@ class SpatialGraphBase(GraphBase):
     def query_edges_in_roi(self, roi):
         return self._edge_rtree._ctree.search(roi[0], roi[1])
 
-    def query_nearest_nodes(self, point, k, return_distances=False):
-        return self._node_rtree._ctree.nearest(point, k, return_distances)
+    def query_nearest_nodes(self, point, direction=None, k=1, return_distances=False):
+        if return_distances:
+            return self._node_rtree._ctree.nearest_with_distances(point, direction, k)
+        else:
+            return self._node_rtree._ctree.nearest(point, direction, k)
 
     def query_nearest_edges(self, point, k, return_distances=False):
         return self._edge_rtree._ctree.nearest(point, k, return_distances)
@@ -91,7 +94,8 @@ class SpatialGraphBase(GraphBase):
             edges = np.concatenate(
                 self.in_edges_by_nodes(nodes), self.out_edges_by_nodes(nodes)
             )
-        elif isinstance(self, Graph):
+        else:
+            assert isinstance(self, Graph)
             edges = self.edges_by_nodes(nodes)
         positions_u = getattr(self.node_attrs[edges[:, 0]], self.position_attr)
         positions_v = getattr(self.node_attrs[edges[:, 1]], self.position_attr)

@@ -693,24 +693,90 @@ void rtree_search(const struct rtree *tr, const coord_t min[],
 	}
 }
 
-coord_t distance_bb(const coord_t point[], struct rect *rect) {
+coord_t distance_bb(const coord_t point[], const coord_t direction[], struct rect *rect) {
 
 	coord_t dist2 = 0;
 
-	for (int i = 0; i < DIMS; i++) {
-		if (point[i] < rect->min[i]) {
-			dist2 += pow(rect->min[i] - point[i], 2);
-		} else if (point[i] > rect->max[i]) {
-			dist2 += pow(point[i] - rect->max[i], 2);
+	// point to bounding box
+	if (direction == NULL) {
+
+		for (int i = 0; i < DIMS; i++) {
+			if (point[i] < rect->min[i]) {
+				dist2 += pow(rect->min[i] - point[i], 2);
+			} else if (point[i] > rect->max[i]) {
+				dist2 += pow(point[i] - rect->max[i], 2);
+			}
+			// else: coordinate is within min and max, does not contribute to
+			// distance
 		}
-		// else: coordinate is within min and max, does not contribute to
-		// distance
+		return dist2;
 	}
 
-	return dist2;
+	// ray to bounding box
+
+	// does the ray intersect the bounding box?
+	coord_t t_enter = 0.0;
+	coord_t t_leave = INFINITY;
+  for (int d = 0; d < DIMS; d++) {
+    coord_t t1 = (rect->min[d] - point[d]) / direction[d];
+    coord_t t2 = (rect->max[d] - point[d]) / direction[d];
+    // NaN save computations of
+    // t_enter = max(t_enter, min(t1, t2))
+    // t_leave = min(t_leave, max(t1, t2))
+    t_enter = min0(max0(t1, t_enter), max0(t2, t_enter));
+		t_leave = max0(min0(t1, t_leave), min0(t2, t_leave));
+  }
+  if (t_enter >= 0 && t_leave > t_enter) {
+  	return 0;
+  }
+
+	// the ray does not intersect the bounding box, now we approximate the
+	// distance optimistically
+
+	// 1. compute the center and radius^2 of the box
+	coord_t center[DIMS];
+	coord_t radius2 = 0.0;
+	coord_t direction_length = 0.0;
+	for (int d = 0; d < DIMS; d++) {
+		center[d] = (rect->min[d] + rect->max[d]) / 2;
+		radius2 += pow(0.5 * (rect->min[d] - rect->max[d]), 2);
+		direction_length += pow(direction[d], 2);
+	}
+
+	// 2. measure distance of center of box to ray
+  coord_t to_center[DIMS];
+  coord_t alpha = 0.0;
+  for (int d = 0; d < DIMS; d++) {
+      // get vector from point to center of box
+      to_center[d] = center[d] - point[d];
+      // project onto ray
+      alpha += to_center[d] * direction[d];
+  }
+  // normalize dot product
+  alpha /= direction_length;
+  // clip at 0 (ray does not extend in negative direction)
+  alpha = max0(0, alpha);
+  for (int d = 0; d < DIMS; d++) {
+    // multiply "direction" by "alpha" to obtain closest segment point to
+    // "center" and subtract that from "to_center" vector
+    to_center[d] -= direction[d] * alpha;
+  }
+  // compute squared length of offset
+  coord_t distance2 = 0;
+  for (int d = 0; d < DIMS; d++) {
+  	distance2 += pow(to_center[d], 2);
+  }
+
+	// 3. optimisitc estimate is (distance - radius)^2, i.e.,
+	// 			distance2 = (sqrt(distance2) - sqrt(radius2))^2
+	// 		below does that with only one sqrt and no pow
+	distance2 = distance2 - 2*sqrt(distance2 * radius2) + radius2;
+
+	// finally, ensure that the distance estimate is positive
+	return max0(0, distance2);
 }
 
-bool rtree_nearest(struct rtree *tr, const coord_t point[],
+bool rtree_nearest(struct rtree *tr, const coord_t point[], const coord_t direction[],
 	bool (*iter)(const item_t item, coord_t distance, void *udata),
 	void *udata) {
 
@@ -779,7 +845,7 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 			for (int i = 0; i < leaf->count; i++) {
 
 				struct element item_element = {
-					.distance = distance_bb(point, &leaf->rects[i]),
+					.distance = distance_bb(point, direction, &leaf->rects[i]),
 					.kind = ITEM_BY_BB,
 					.item = leaf->items[i],
 					.rect = &leaf->rects[i]
@@ -798,7 +864,7 @@ bool rtree_nearest(struct rtree *tr, const coord_t point[],
 			for (int i = 0; i < branch->count; i++) {
 
 				struct element node_element = {
-					.distance = distance_bb(point, &branch->rects[i]),
+					.distance = distance_bb(point, direction, &branch->rects[i]),
 					.kind = branch->nodes[i]->kind,  // BRANCH or LEAF
 					.node = branch->nodes[i]
 				};
