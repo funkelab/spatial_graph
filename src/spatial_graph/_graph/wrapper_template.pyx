@@ -103,7 +103,7 @@ cdef extern from *:
             %for name, dtype in $dtypes.items()
             $sep
             %if $dtype.is_array
-            ${name}{
+            ${cpp_member(name)}{
             %set $isep=""
             %for i in range($dtype.size)
                 ${isep}_${name}[$i]
@@ -111,7 +111,7 @@ cdef extern from *:
             %end for
             }
             %else
-            ${name}(_$name)%slurp
+            ${cpp_member(name)}(_$name)%slurp
             %end if
             %set $sep=", "
             %end for
@@ -119,7 +119,7 @@ cdef extern from *:
             %end if
 
             %for name, dtype in $dtypes.items()
-            $dtype.to_c_decl($name);
+            $dtype.to_c_decl($cpp_member(name));
             %end for
     };
     """
@@ -135,7 +135,7 @@ cdef extern from *:
         ) except +
 
         %for name, dtype in $dtypes.items()
-        $dtype.to_pyxtype() $name
+        $dtype.to_pyxtype() $name "$cpp_member(name)"
         %end for
 
 cdef class ${class_name}View:

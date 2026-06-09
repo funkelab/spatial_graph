@@ -95,3 +95,29 @@ def test_attr_dtypes(dtype):
     graph.add_node(1, position=np.array([0.0, 0.0, 0.0]), **{f"node_attr_{dtype}": 0})
     graph.add_node(2, position=np.array([0.0, 0.0, 0.0]), **{f"node_attr_{dtype}": 1})
     graph.add_edge([1, 2], **{f"edge_attr_{dtype}": 0})
+
+
+# Attribute names that collide with C++ keywords or MSVC built-in type
+# specifiers (but are not Python keywords, so they are valid attribute names).
+# These cannot appear verbatim as C++ struct members. In particular MSVC (with
+# Microsoft extensions) treats ``int8``/``int16``/``int32``/``int64`` as aliases
+# for the ``__intN`` keywords, so a member named ``int16`` expands to
+# ``int16_t __int16;`` and fails to compile.
+@pytest.mark.parametrize("attr_name", ["int8", "int16", "int32", "int64", "new", "double"])
+def test_attr_name_collides_with_cpp_keyword(attr_name):
+    graph = sg.SpatialGraph(
+        ndims=3,
+        node_dtype="uint64",
+        node_attr_dtypes={attr_name: "int16", "position": "double[3]"},
+        edge_attr_dtypes={attr_name: "int16"},
+        position_attr="position",
+    )
+
+    graph.add_node(1, position=np.array([0.0, 0.0, 0.0]), **{attr_name: 5})
+    graph.add_node(2, position=np.array([1.0, 1.0, 1.0]), **{attr_name: 7})
+    graph.add_edge([1, 2], **{attr_name: 9})
+
+    # round-trip through the Python-facing API, which keeps the user's name
+    assert getattr(graph.node_attrs[1], attr_name) == 5
+    assert getattr(graph.node_attrs[2], attr_name) == 7
+    assert getattr(graph.edge_attrs[(1, 2)], attr_name) == 9
