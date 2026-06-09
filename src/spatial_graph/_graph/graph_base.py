@@ -33,6 +33,33 @@ else:
 SRC_DIR = Path(__file__).parent
 
 
+def _cpp_member_name(name: str) -> str:
+    """C++ struct member name for a user-provided node/edge attribute.
+
+    User attribute names are used verbatim as the Python-facing API (property
+    names, ``get_*``/``set_*`` methods), but they cannot be used directly as
+    C++ identifiers: a name like ``int16`` collides with the MSVC built-in
+    ``__int16`` (Microsoft extensions treat ``int8``/``int16``/``int32``/
+    ``int64`` *and* their single-underscore forms ``_int8``/... as synonyms for
+    the ``__intN`` keywords), and others may clash with C++ keywords (``class``,
+    ``new``, ...). We therefore mangle the C++ member with a fixed prefix and
+    alias it back to the user name on the Cython side, so the public API is
+    unchanged while the generated C++ always compiles. The prefix matters: a
+    bare ``_`` prefix would turn ``int8`` into ``_int8``, which is itself an
+    MSVC keyword, so the prefix must not be ``_`` followed by a digit.
+    """
+    return "_attr_" + name
+
+
+def _cpp_arg_name(name: str) -> str:
+    """C++ constructor parameter name for a user-provided attribute.
+
+    Must be distinct from :func:`_cpp_member_name` (the constructor initializes
+    ``member(arg)``) and, like it, must avoid the MSVC ``_intN`` keyword forms.
+    """
+    return "_arg_" + name
+
+
 def _build_wrapper(
     node_dtype: str,
     node_attr_dtypes: Mapping[str, str] | None = None,
@@ -60,6 +87,8 @@ def _build_wrapper(
         name: DType(dtype) for name, dtype in edge_attr_dtypes.items()
     }
     wrapper_template.directed = directed
+    wrapper_template.cpp_member = _cpp_member_name
+    wrapper_template.cpp_arg = _cpp_arg_name
 
     return str(wrapper_template)
 
