@@ -99,10 +99,11 @@ def test_attr_dtypes(dtype):
 
 # Attribute names that collide with C++ keywords or MSVC built-in type
 # specifiers (but are not Python keywords, so they are valid attribute names).
-# These cannot appear verbatim as C++ struct members. In particular MSVC (with
-# Microsoft extensions) treats ``int8``/``int16``/``int32``/``int64`` as aliases
-# for the ``__intN`` keywords, so a member named ``int16`` expands to
-# ``int16_t __int16;`` and fails to compile.
+# These cannot appear verbatim as C++ struct members or constructor parameters.
+# In particular MSVC (with Microsoft extensions) treats ``int8``/``int16``/
+# ``int32``/``int64`` *and* their single-underscore forms ``_int8``/... as
+# aliases for the ``__intN`` keywords, so a member named ``int16`` (or a
+# constructor parameter ``_int16``) expands to ``__int16`` and fails to compile.
 @pytest.mark.parametrize(
     "attr_name", ["int8", "int16", "int32", "int64", "new", "double"]
 )
@@ -115,11 +116,37 @@ def test_attr_name_collides_with_cpp_keyword(attr_name):
         position_attr="position",
     )
 
-    graph.add_node(1, position=np.array([0.0, 0.0, 0.0]), **{attr_name: 5})
-    graph.add_node(2, position=np.array([1.0, 1.0, 1.0]), **{attr_name: 7})
+    graph.add_node(1, position=np.array([1.0, 1.0, 1.0]), **{attr_name: 5})
+    graph.add_node(2, position=np.array([2.0, 2.0, 2.0]), **{attr_name: 7})
     graph.add_edge([1, 2], **{attr_name: 9})
 
-    # round-trip through the Python-facing API, which keeps the user's name
+    # The user-provided name stays the public attribute (the colliding name only
+    # affects the internal C++ identifier). Reading it back through every public
+    # access path must return the stored value -- a regression in the C++ member
+    # mangling / Cython cname-aliasing would silently corrupt these.
+    nodes = np.array([1, 2], dtype="uint64")
+
+    # single node
     assert getattr(graph.node_attrs[1], attr_name) == 5
     assert getattr(graph.node_attrs[2], attr_name) == 7
+    # array of nodes
+    np.testing.assert_array_equal(
+        getattr(graph.node_attrs[nodes], attr_name), np.array([5, 7], dtype="int16")
+    )
+    # all nodes (order is unspecified, so compare sorted)
+    np.testing.assert_array_equal(
+        np.sort(getattr(graph.node_attrs, attr_name)), np.array([5, 7], dtype="int16")
+    )
+    # edge
     assert getattr(graph.edge_attrs[(1, 2)], attr_name) == 9
+
+    # the position attribute is mangled the same way and must be unaffected
+    np.testing.assert_array_equal(
+        graph.node_attrs[1].position, np.array([1.0, 1.0, 1.0])
+    )
+
+    # setting through the public attribute round-trips too
+    setattr(graph.node_attrs[1], attr_name, 11)
+    assert getattr(graph.node_attrs[1], attr_name) == 11
+    setattr(graph.edge_attrs[(1, 2)], attr_name, 13)
+    assert getattr(graph.edge_attrs[(1, 2)], attr_name) == 13
