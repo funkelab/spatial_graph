@@ -22,22 +22,34 @@ jobs:
         run: pipx run pre-commit run --all-files
 
   test:
+    name: ${{ matrix.os }} py${{ matrix.python-version }} ${{ matrix.resolution }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.11", "3.13"]
+        # ubuntu: full python range x both resolutions
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        resolution: [lowest-direct, highest]
+        # windows/macos: only the endpoints, highest resolution
+        include:
+          - { os: windows-latest, python-version: "3.10", resolution: highest }
+          - { os: windows-latest, python-version: "3.14", resolution: highest }
+          - { os: macos-latest, python-version: "3.10", resolution: highest }
+          - { os: macos-latest, python-version: "3.14", resolution: highest }
+
+    env:
+      UV_RESOLUTION: ${{ matrix.resolution }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
       - name: Test with coverage
-        run: uv run pytest -v --cov=spatial_graph --cov-report=xml
+        run: uv run --no-dev --group test pytest -v --cov=spatial_graph --cov-report=xml
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
