@@ -103,7 +103,9 @@ def test_attr_dtypes(dtype):
 # Microsoft extensions) treats ``int8``/``int16``/``int32``/``int64`` as aliases
 # for the ``__intN`` keywords, so a member named ``int16`` expands to
 # ``int16_t __int16;`` and fails to compile.
-@pytest.mark.parametrize("attr_name", ["int8", "int16", "int32", "int64", "new", "double"])
+@pytest.mark.parametrize(
+    "attr_name", ["int8", "int16", "int32", "int64", "new", "double"]
+)
 def test_attr_name_collides_with_cpp_keyword(attr_name):
     graph = sg.SpatialGraph(
         ndims=3,
