@@ -28,7 +28,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "witty>=v0.3.0",
+  "witty>=0.3.2",
   "CT3>=3.3.3",
   "numpy>=2.3.2; python_version >= '3.14'",
   "numpy>=2.1.0; python_version >= '3.13'",
