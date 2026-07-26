@@ -107,7 +107,7 @@ def _compile_graph(
     )
     wrapper = witty.compile_cython(
         wrapper_template,
-        source_files=[str(SRC_DIR / "src" / "graph_lite.h")],
+        depends_on=[str(SRC_DIR / "src" / "graph_lite.h")],
         extra_compile_args=EXTRA_COMPILE_ARGS,
         include_dirs=[str(SRC_DIR)],
         language="c++",
