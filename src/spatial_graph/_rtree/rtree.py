@@ -48,10 +48,8 @@ def _compile_tree(
     wrapper = _build_wrapper(cls, item_dtype, coord_dtype, dims)
     module = witty.compile_cython(
         wrapper,
-        source_files=[
-            SRC_DIR / "src" / "rtree.c",
-        ],
         depends_on=[
+            SRC_DIR / "src" / "rtree.c",
             SRC_DIR / "src" / "rtree.h",
             SRC_DIR / "src" / "config.h",
         ],
