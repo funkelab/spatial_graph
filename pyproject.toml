@@ -73,6 +73,16 @@ docs = [
 homepage = "https://github.com/funkelab/spatial_graph"
 repository = "https://github.com/funkelab/spatial_graph"
 
+[tool.cibuildwheel]
+# a single abi3 build per platform covers every supported CPython
+build = "cp311-*"
+# never let a wheel silently degrade to pure Python
+environment = { SPATIAL_GRAPH_REQUIRE_PREBUILT = "1" }
+test-groups = ["test"]
+# these exercise the prebuilt modules in the repaired wheel without needing a
+# compiler; cross-version and numpy-only checks live in the CI workflow
+test-command = "pytest {project}/tests/test_prebuilt.py -q"
+
 [tool.ruff]
 target-version = "py311"
 line-length = 88

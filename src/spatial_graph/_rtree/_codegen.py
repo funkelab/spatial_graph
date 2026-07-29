@@ -25,14 +25,14 @@ if TYPE_CHECKING:
 
 TEMPLATE = Path(__file__).parent / "wrapper_template.pyx"
 
-# Variants compiled ahead of time into binary wheels. Only `PointRTree` by
-# default: `LineRTree` is only ever used by `SpatialGraph`, whose graph half is
-# JIT-compiled regardless, so prebuilding it would double the wheel size without
-# removing anyone's compiler requirement.
+# Variants compiled ahead of time into binary wheels. `PointRTree` is what makes
+# a compiler unnecessary for rtree-only users; `LineRTree` is only reached via
+# `SpatialGraph`, whose graph half is JIT-compiled regardless, so prebuilding it
+# saves first-use compile time rather than removing a requirement.
 ITEM_BASES = ("int64", "uint64")
 COORD_DTYPES = ("float32", "float64")
 DIMS = (2, 3, 4, 5)
-PREBUILT_LINE_TREES = False
+PREBUILT_LINE_TREES = True
 
 
 class Spec(NamedTuple):

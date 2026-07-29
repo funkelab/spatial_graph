@@ -79,9 +79,97 @@ jobs:
         with:
           run: uv run pytest -W ignore --codspeed -v --color=yes
 
+  # One abi3 wheel per platform, covering every supported CPython. Also the only
+  # thing that produces PyPI-acceptable manylinux tags -- `uv build` alone emits
+  # `linux_x86_64`, which PyPI rejects.
+  build-wheels:
+    name: Wheels ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest # manylinux x86_64
+          - ubuntu-24.04-arm # manylinux aarch64
+          - windows-latest # win_amd64
+          - macos-13 # macOS x86_64
+          - macos-latest # macOS arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # setuptools-scm needs the tags
+      - uses: pypa/cibuildwheel@v4.1.1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+  build-sdist:
+    name: Sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - run: uv build --sdist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  # The claim this whole design rests on: one cp311-abi3 wheel runs on every
+  # supported CPython, with no compiler and no witty.
+  test-abi3-wheel:
+    name: abi3 wheel on py${{ matrix.python-version }}
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    env:
+      SPATIAL_GRAPH_REQUIRE_PREBUILT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-latest
+          path: wheelhouse
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install the wheel with numpy alone
+        run: |
+          uv venv
+          uv pip install numpy
+          uv pip install --no-deps wheelhouse/*.whl
+      - name: Prebuilt rtrees must work without witty, Cheetah or a compiler
+        run: |
+          uv run --no-sync python -c "
+          import sys, numpy as np
+          try:
+              import witty; sys.exit('witty present; test is not conclusive')
+          except ImportError: pass
+          from spatial_graph import PointRTree
+          t = PointRTree('int64', 'float32', 3)
+          t.insert_point_items(np.array([1, 2], dtype='int64'),
+                               np.ascontiguousarray([[0,0,0],[9,9,9]], dtype='float32'))
+          mod = type(t._ctree).__module__
+          assert '_prebuilt' in mod, mod
+          found = t.search(np.array([0,0,0],'float32'), np.array([1,1,1],'float32'))
+          assert found.ravel().tolist() == [1], found
+          print('ok:', mod)"
+      # the test module imports the codegen (and so Cheetah), so pull the real
+      # dependency set back in before running the suite
+      - name: Run the prebuilt test suite against the wheel
+        run: |
+          uv pip install wheelhouse/*.whl pytest
+          uv run --no-sync pytest tests/test_prebuilt.py -v
+
   deploy:
     name: Deploy
-    needs: test
+    needs: [test, test-abi3-wheel, build-sdist]
     if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
     runs-on: ubuntu-latest
 
@@ -90,17 +178,15 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
-      - uses: astral-sh/setup-uv@v6
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-          cache-dependency-glob: "**/pyproject.toml"
-
-      - name: 👷 Build
-        run: uv build
+          name: sdist
+          path: dist
 
       - name: 🚢 Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
