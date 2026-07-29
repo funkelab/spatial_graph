@@ -19,7 +19,10 @@ from typing import Any
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
-# oldest CPython with the buffer protocol (memoryviews) in the limited API
+# The wrappers pass numpy arrays as typed memoryviews, which compile to
+# PyObject_GetBuffer/PyBuffer_Release. Those entered the limited API in 3.11
+# (moved from cpython/object.h, excluded under Py_LIMITED_API, to pybuffer.h),
+# so 3.11 is the floor for a stable-ABI build -- and matches requires-python.
 ABI3_MIN = (3, 11)
 ABI3_HEX = f"0x{ABI3_MIN[0]:02x}{ABI3_MIN[1]:02x}0000"
 
@@ -55,16 +58,19 @@ class PrebuiltRTreeHook(BuildHookInterface):
         if os.getenv("SPATIAL_GRAPH_NO_PREBUILT"):
             return
 
-        # 3.10 lacks the buffer protocol in the limited API, so it gets a plain
-        # version-specific wheel; 3.11+ all share one abi3 wheel per platform.
-        abi3 = sys.version_info >= ABI3_MIN
+        if sys.version_info < ABI3_MIN:
+            raise RuntimeError(
+                f"building spatial-graph wheels requires Python >= "
+                f"{'.'.join(map(str, ABI3_MIN))}; the resulting abi3 wheel then "
+                f"covers every supported CPython."
+            )
 
         _stub_spatial_graph_package()
         from spatial_graph._rtree._codegen import build_wrapper
         from spatial_graph._rtree._naming import module_name
         from spatial_graph._rtree._specs import iter_specs
 
-        build_dir = ROOT / "build" / "prebuilt" / f"{_platform_tag()}-{abi3}"
+        build_dir = ROOT / "build" / "prebuilt" / _platform_tag()
         pyx_dir = build_dir / "pyx"
         pyx_dir.mkdir(parents=True, exist_ok=True)
 
@@ -81,7 +87,7 @@ class PrebuiltRTreeHook(BuildHookInterface):
             names.append(name)
 
         try:
-            built = self._compile(pyx_dir, names, build_dir, abi3)
+            built = self._compile(pyx_dir, names, build_dir)
         except Exception as e:
             # Installing from an sdist on a machine with no usable compiler must
             # keep working: fall back to a pure-Python wheel that JIT-compiles on
@@ -103,14 +109,9 @@ class PrebuiltRTreeHook(BuildHookInterface):
             force_include[str(artifact)] = f"{PKG}/{artifact.name}"
 
         build_data["pure_python"] = False
-        if abi3:
-            build_data["tag"] = f"cp{ABI3_MIN[0]}{ABI3_MIN[1]}-abi3-{_platform_tag()}"
-        else:
-            build_data["infer_tag"] = True
+        build_data["tag"] = f"cp{ABI3_MIN[0]}{ABI3_MIN[1]}-abi3-{_platform_tag()}"
 
-    def _compile(
-        self, pyx_dir: Path, names: list[str], build_dir: Path, abi3: bool
-    ) -> list[Path]:
+    def _compile(self, pyx_dir: Path, names: list[str], build_dir: Path) -> list[Path]:
         from Cython.Build import cythonize
         from setuptools import Distribution, Extension
 
@@ -123,10 +124,10 @@ class PrebuiltRTreeHook(BuildHookInterface):
                 include_dirs=[str(rtree_src)],
                 extra_compile_args=["/O2"] if win else ["-O3", "-Wno-unreachable-code"],
                 define_macros=[
-                    *([("Py_LIMITED_API", ABI3_HEX)] if abi3 else []),
+                    ("Py_LIMITED_API", ABI3_HEX),
                     *([("RTREE_NOATOMICS", "1")] if win else []),
                 ],
-                py_limited_api=abi3,
+                py_limited_api=True,
             )
             for name in names
         ]
