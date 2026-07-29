@@ -6,17 +6,17 @@ source checkout there is no `_prebuilt` subpackage and they are skipped.
 
 from __future__ import annotations
 
-import importlib.util
-
 import numpy as np
 import pytest
 
 from spatial_graph import PointRTree
-from spatial_graph._rtree._naming import PREBUILT_PACKAGE, module_name
-from spatial_graph._rtree._specs import iter_specs
+from spatial_graph._rtree._codegen import iter_specs
+from spatial_graph._rtree._naming import module_name
 from spatial_graph._rtree.rtree import _load_prebuilt
 
-has_prebuilt = importlib.util.find_spec(PREBUILT_PACKAGE) is not None
+# the `_prebuilt` package always exists but is empty in a source checkout, so
+# probe for a real module rather than for the package
+has_prebuilt = _load_prebuilt(PointRTree, "int64", "float32", 2) is not None
 requires_prebuilt = pytest.mark.skipif(
     not has_prebuilt, reason="no prebuilt modules in this install"
 )

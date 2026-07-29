@@ -1,6 +1,6 @@
 """Deterministic naming for prebuilt RTree extension modules.
 
-Shared by the runtime lookup and the build hook, so the two can never disagree.
+Shared by the runtime lookup and `setup.py`, so the two can never disagree.
 Deliberately depends only on `_dtypes` -- it sits on the import path of every
 `PointRTree`, including installs with neither Cheetah nor witty available.
 """
@@ -8,7 +8,6 @@ Deliberately depends only on `_dtypes` -- it sits on the import path of every
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from spatial_graph._dtypes import DType
@@ -16,9 +15,7 @@ from spatial_graph._dtypes import DType
 if TYPE_CHECKING:
     from .rtree import RTree
 
-SRC_DIR = Path(__file__).parent
-
-# subpackage holding ahead-of-time compiled modules; absent from pure-Python installs
+# subpackage holding ahead-of-time compiled modules; empty in a source checkout
 PREBUILT_PACKAGE = f"{__package__}._prebuilt"
 
 

@@ -1,19 +1,21 @@
 [build-system]
 requires = [
-  "hatchling",
-  "hatch-vcs",
+  "setuptools>=77",
+  "setuptools-scm>=8",
   "Cython>=3.1",
   "CT3>=3.3.3",
-  "numpy",  # imported (not linked) while rendering wrappers
-  "setuptools>=75.8.0",
+  "numpy",  # imported (not linked) while rendering the wrappers
 ]
-build-backend = "hatchling.build"
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.version]
-source = "vcs"
+[tool.setuptools_scm]
 
-[tool.hatch.build.targets.wheel.hooks.custom]
-path = "hatch_build.py"
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# the JIT fallback compiles from these at runtime, so they must ship in the wheel
+"*" = ["py.typed", "*.pyx", "*.c", "*.h", "LICENSE*", "*.md"]
 
 [project]
 name = "spatial-graph"

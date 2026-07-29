@@ -3,19 +3,22 @@ from __future__ import annotations
 import importlib
 import os
 import sys
+from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
 
 from spatial_graph._dtypes import DType
 
-from ._naming import PREBUILT_PACKAGE, SRC_DIR, module_name
+from ._naming import PREBUILT_PACKAGE, module_name
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
 if sys.platform == "win32":  # pragma: no cover
     EXTRA_COMPILE_ARGS = ["/O2"]
 else:
     EXTRA_COMPILE_ARGS = ["-O3", "-Wno-unreachable-code"]
+
+SRC_DIR = Path(__file__).parent
 
 
 def _load_prebuilt(
