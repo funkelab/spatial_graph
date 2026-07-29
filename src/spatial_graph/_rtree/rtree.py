@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import importlib
+import os
 import sys
-from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
-import witty
-from Cheetah.Template import Template
 
 from spatial_graph._dtypes import DType
+
+from ._naming import PREBUILT_PACKAGE, SRC_DIR, module_name
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
 if sys.platform == "win32":  # pragma: no cover
@@ -16,36 +17,35 @@ if sys.platform == "win32":  # pragma: no cover
 else:
     EXTRA_COMPILE_ARGS = ["-O3", "-Wno-unreachable-code"]
 
-SRC_DIR = Path(__file__).parent
 
-
-def _build_wrapper(
+def _load_prebuilt(
     cls: type[RTree], item_dtype: str, coord_dtype: str, dims: int
-) -> str:
-    ############################################
-    # create wrapper from template and compile #
-    ############################################
-
-    wrapper_template = Template(
-        file=str(SRC_DIR / "wrapper_template.pyx"),
-        compilerSettings={"directiveStartToken": "%"},
-    )
-    wrapper_template.item_dtype = DType(item_dtype)
-    wrapper_template.coord_dtype = DType(coord_dtype)
-    wrapper_template.dims = dims
-    wrapper_template.c_distance_function = cls.c_distance_function
-    wrapper_template.pyx_item_t_declaration = cls.pyx_item_t_declaration
-    wrapper_template.c_item_t_declaration = cls.c_item_t_declaration
-    wrapper_template.c_converter_functions = cls.c_converter_functions
-    wrapper_template.c_equal_function = cls.c_equal_function
-
-    return str(wrapper_template)
+) -> type | None:
+    """Return the ahead-of-time compiled tree class, or None if not shipped."""
+    if os.getenv("SPATIAL_GRAPH_NO_PREBUILT"):
+        return None
+    name = module_name(cls, item_dtype, coord_dtype, dims)
+    try:
+        module = importlib.import_module(f"{PREBUILT_PACKAGE}.{name}")
+    except ImportError:
+        return None
+    return module.RTree
 
 
-def _compile_tree(
+def _jit_compile_tree(
     cls: type[RTree], item_dtype: str, coord_dtype: str, dims: int
 ) -> type:
-    wrapper = _build_wrapper(cls, item_dtype, coord_dtype, dims)
+    """Compile a tree with the system C compiler.
+
+    Only reached for dtype combinations not shipped prebuilt; Cheetah and witty
+    are imported here so neither is needed by installs that stay on the
+    prebuilt path.
+    """
+    import witty
+
+    from ._codegen import build_wrapper
+
+    wrapper = build_wrapper(cls, item_dtype, coord_dtype, dims)
     module = witty.compile_cython(
         wrapper,
         depends_on=[
@@ -60,6 +60,15 @@ def _compile_tree(
         define_macros=DEFINE_MACROS,
     )
     return module.RTree
+
+
+def _compile_tree(
+    cls: type[RTree], item_dtype: str, coord_dtype: str, dims: int
+) -> type:
+    tree_cls = _load_prebuilt(cls, item_dtype, coord_dtype, dims)
+    if tree_cls is None:
+        tree_cls = _jit_compile_tree(cls, item_dtype, coord_dtype, dims)
+    return tree_cls
 
 
 class RTree:
