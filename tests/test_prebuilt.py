@@ -1,10 +1,14 @@
 """Tests for ahead-of-time compiled rtree modules.
 
-The `prebuilt` marked tests only mean something against an installed wheel; in a
-source checkout there is no `_prebuilt` subpackage and they are skipped.
+The `requires_prebuilt` tests only mean something against an install that
+actually shipped them, and are skipped otherwise -- except when
+`SPATIAL_GRAPH_REQUIRE_PREBUILT` is set (as CI does), where their absence is
+the very regression we want to catch.
 """
 
 from __future__ import annotations
+
+import os
 
 import numpy as np
 import pytest
@@ -22,10 +26,17 @@ requires_prebuilt = pytest.mark.skipif(
 )
 
 
+def test_prebuilt_modules_were_shipped():
+    """Guard against a wheel that silently degraded to pure Python."""
+    if not os.getenv("SPATIAL_GRAPH_REQUIRE_PREBUILT"):
+        pytest.skip("SPATIAL_GRAPH_REQUIRE_PREBUILT not set")
+    assert has_prebuilt, "install shipped no prebuilt rtree modules"
+
+
 @requires_prebuilt
 @pytest.mark.parametrize("spec", list(iter_specs()), ids=str)
 def test_every_declared_spec_is_shipped(spec):
-    """Every variant in `_specs` must actually resolve to a prebuilt module."""
+    """Every variant in `iter_specs` must actually resolve to a prebuilt module."""
     assert _load_prebuilt(spec.cls, spec.item_dtype, spec.coord_dtype, spec.dims)
 
 

@@ -29,17 +29,19 @@ jobs:
       matrix:
         # ubuntu: full python range x both resolutions
         os: [ubuntu-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
         resolution: [lowest-direct, highest]
         # windows/macos: only the endpoints, highest resolution
         include:
-          - { os: windows-latest, python-version: "3.10", resolution: highest }
+          - { os: windows-latest, python-version: "3.11", resolution: highest }
           - { os: windows-latest, python-version: "3.14", resolution: highest }
-          - { os: macos-latest, python-version: "3.10", resolution: highest }
+          - { os: macos-latest, python-version: "3.11", resolution: highest }
           - { os: macos-latest, python-version: "3.14", resolution: highest }
 
     env:
       UV_RESOLUTION: ${{ matrix.resolution }}
+      # a build that silently falls back to pure-Python must fail, not go green
+      SPATIAL_GRAPH_REQUIRE_PREBUILT: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -48,8 +50,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
+      # --no-editable so we test the built wheel, prebuilt rtree modules and all,
+      # rather than an editable install of src/
+      - name: Install as a built wheel
+        run: uv sync --no-dev --group test --no-editable
       - name: Test with coverage
-        run: uv run --no-dev --group test pytest -v --cov=spatial_graph --cov-report=xml
+        run: uv run --no-sync pytest -v --cov=spatial_graph --cov-report=xml
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -66,7 +72,7 @@ jobs:
           enable-cache: true
 
       - name: install
-        run: uv sync --no-dev --group test-codspeed
+        run: uv sync --no-dev --group test-codspeed --no-editable
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
