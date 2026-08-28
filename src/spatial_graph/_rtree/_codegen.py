@@ -2,8 +2,9 @@
 
 Used on the JIT path and by `setup.py`, so prebuilt and JIT-compiled modules are
 always generated from the same source. Requires Cheetah, and is therefore
-imported lazily by `rtree.py` -- installs that stay on the prebuilt path need
-neither Cheetah nor witty.
+imported lazily by `rtree.py`: Cheetah and witty stay installed either way, but
+a tree that resolves to a prebuilt module never invokes them, and so never
+needs a C compiler.
 """
 
 from __future__ import annotations

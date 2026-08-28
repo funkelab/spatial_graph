@@ -31,7 +31,9 @@ def module_name(cls: type[RTree], item_dtype: str, coord_dtype: str, dims: int) 
     Dtypes are canonicalized (so `int` and `int64` agree) and spelled out for
     readability. The trailing digest covers the C/pyx code `cls` injects into the
     template, so a subclass with custom code can never be served a prebuilt
-    module compiled from different code.
+    module compiled from different code. It deliberately does not cover the
+    template itself, the vendored C, or the compiler flags: keeping those in
+    step is the build's job (see `depends` in `setup.py`).
     """
     parts = (
         cls.pyx_item_t_declaration,

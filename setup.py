@@ -1,9 +1,10 @@
 """Compile RTree variants ahead of time into a stable-ABI (abi3) wheel.
 
 Renders the same pyx wrappers the runtime would JIT-compile (via
-`_rtree._codegen`) for every variant in `iter_specs()`, so prebuilt and
-JIT-compiled modules can never disagree. One wheel per platform then covers
-every supported CPython, and users never need a C compiler for those variants.
+`_rtree._codegen`) for every variant in `iter_specs()`, so the two paths are
+generated from one source. One wheel per platform then covers every supported
+CPython, and those variants are never compiled on the user's machine -- so no
+C compiler is invoked for them.
 
 Set `SPATIAL_GRAPH_NO_PREBUILT=1` to build a pure-Python wheel instead, or
 `SPATIAL_GRAPH_REQUIRE_PREBUILT=1` (as CI does) to turn a failure to compile
@@ -46,6 +47,12 @@ def prebuilt_extensions() -> list[Extension]:
     pyx_dir = ROOT / "build" / "prebuilt-pyx"
     pyx_dir.mkdir(parents=True, exist_ok=True)
 
+    # the template `#include`s these at compile time, so they never appear in
+    # `sources`; without `depends` an edit to the C core would leave every
+    # prebuilt module stale (the JIT path declares the same set to witty)
+    rtree_dir = SRC / "spatial_graph" / "_rtree"
+    depends = [str(rtree_dir / "src" / f) for f in ("rtree.c", "rtree.h", "config.h")]
+
     extensions = []
     for spec in iter_specs():
         name = module_name(spec.cls, spec.item_dtype, spec.coord_dtype, spec.dims)
@@ -58,7 +65,8 @@ def prebuilt_extensions() -> list[Extension]:
             Extension(
                 f"{PREBUILT_PKG}.{name}",
                 sources=[str(path)],
-                include_dirs=[str(SRC / "spatial_graph" / "_rtree")],
+                depends=depends,
+                include_dirs=[str(rtree_dir)],
                 extra_compile_args=["/O2"] if WIN else ["-O3", "-Wno-unreachable-code"],
                 define_macros=[
                     ("Py_LIMITED_API", ABI3_HEX),
@@ -77,19 +85,30 @@ def prebuilt_extensions() -> list[Extension]:
 
 
 def can_compile() -> bool:
-    """Whether this machine can build a C extension at all."""
-    from distutils.ccompiler import new_compiler
-    from distutils.sysconfig import customize_compiler
+    """Whether this machine can build a C extension at all.
 
-    compiler = new_compiler()
-    customize_compiler(compiler)  # picks up CC/CFLAGS, as build_ext does
-    with tempfile.TemporaryDirectory() as tmp:
-        probe = Path(tmp, "probe.c")
-        probe.write_text("int main(void) { return 0; }\n")
-        try:
-            compiler.compile([str(probe)], output_dir=tmp)
-        except Exception:
-            return False
+    Includes `Python.h` so that a box with a C compiler but no development
+    headers -- the usual shape of this failure -- is caught here rather than
+    part-way through the real build.
+    """
+    try:
+        from distutils.ccompiler import new_compiler
+        from distutils.sysconfig import customize_compiler, get_python_inc
+
+        compiler = new_compiler()
+        customize_compiler(compiler)  # picks up CC/CFLAGS, as build_ext does
+        with tempfile.TemporaryDirectory() as tmp:
+            probe = Path(tmp, "probe.c")
+            probe.write_text("#include <Python.h>\nint main(void) { return 0; }\n")
+            compiler.compile(
+                [str(probe)],
+                output_dir=tmp,
+                # get_python_inc, not sysconfig: inside a venv the latter
+                # points at the venv, which holds no headers
+                include_dirs=[get_python_inc()],
+            )
+    except Exception:
+        return False
     return True
 
 
@@ -113,13 +132,14 @@ def should_prebuild() -> bool:
     return False
 
 
-if should_prebuild():
-    setup(
-        ext_modules=prebuilt_extensions(),
-        options={
-            "bdist_wheel": {"py_limited_api": ABI3_TAG},
-            "build_ext": {"parallel": os.cpu_count()},
-        },
-    )
-else:
-    setup(ext_modules=[])
+if __name__ == "__main__":
+    if should_prebuild():
+        setup(
+            ext_modules=prebuilt_extensions(),
+            options={
+                "bdist_wheel": {"py_limited_api": ABI3_TAG},
+                "build_ext": {"parallel": os.cpu_count()},
+            },
+        )
+    else:
+        setup(ext_modules=[])

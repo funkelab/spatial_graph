@@ -40,9 +40,9 @@ def _jit_compile_tree(
 ) -> type:
     """Compile a tree with the system C compiler.
 
-    Only reached for dtype combinations not shipped prebuilt; Cheetah and witty
-    are imported here so neither is needed by installs that stay on the
-    prebuilt path.
+    Only reached for dtype combinations not shipped prebuilt. Cheetah and witty
+    are imported here rather than at module scope so that trees served from a
+    prebuilt module never invoke them -- and so never need a C compiler.
     """
     import witty
 
@@ -75,8 +75,10 @@ def _compile_tree(
 
 
 class RTree:
-    """A generic RTree implementation, compiled on-the-fly during
-    instantiation.
+    """A generic RTree implementation, specialized for the given types.
+
+    Common type combinations ship precompiled in the wheels; anything else is
+    compiled on the fly during instantiation, which requires a C compiler.
 
     Args:
 

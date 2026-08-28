@@ -14,8 +14,12 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-# the JIT fallback compiles from these at runtime, so they must ship in the wheel
-"*" = ["py.typed", "*.pyx", "*.c", "*.h", "LICENSE*", "*.md"]
+# The JIT fallback compiles from these at runtime, so they must ship in the
+# wheel. `include-package-data` (on by default here) would pick them up from
+# the VCS/sdist manifest anyway; listing them keeps that explicit and works
+# even when no file finder is available. Patterns are package-relative, so the
+# vendored C under `_rtree/src/` and `_graph/src/` needs the `src/` prefix.
+"*" = ["py.typed", "*.pyx", "src/*.c", "src/*.h", "src/LICENSE*", "src/*.md"]
 
 [project]
 name = "spatial-graph"
