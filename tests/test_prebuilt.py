@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+import witty
 
 from spatial_graph import PointRTree
 from spatial_graph._rtree._codegen import iter_specs
@@ -33,9 +34,21 @@ def test_prebuilt_modules_were_shipped():
 
 @requires_prebuilt
 @pytest.mark.parametrize("spec", list(iter_specs()), ids=str)
-def test_every_declared_spec_is_shipped(spec):
-    """Every variant in `iter_specs` must actually resolve to a prebuilt module."""
-    assert _load_prebuilt(spec.cls, spec.item_dtype, spec.coord_dtype, spec.dims)
+def test_declared_specs_are_shipped_and_never_compile(spec, monkeypatch):
+    """Every declared variant must construct without invoking the compiler.
+
+    This is the property prebuilding exists for. Blocking `compile_cython`
+    asserts it directly, in the environment users actually get -- witty is an
+    unconditional dependency, so it is always installed; what must not happen
+    is that it gets *used*.
+    """
+
+    def no_compiling(*args, **kwargs):
+        raise AssertionError(f"{spec} triggered runtime compilation")
+
+    monkeypatch.setattr(witty, "compile_cython", no_compiling)
+    tree = spec.cls(spec.item_dtype, spec.coord_dtype, spec.dims)
+    assert "_prebuilt" in type(tree._ctree).__module__
 
 
 @requires_prebuilt

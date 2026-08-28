@@ -118,8 +118,9 @@ jobs:
           name: sdist
           path: dist/*.tar.gz
 
-  # The claim this whole design rests on: one cp311-abi3 wheel runs on every
-  # supported CPython, with no compiler and no witty.
+  # Everything else builds its own wheel; this is the only job that exercises
+  # the artifacts we would actually publish, and the only one that checks the
+  # stable-ABI claim -- one cp311 wheel running on every supported CPython.
   test-abi3-wheel:
     name: abi3 wheel on py${{ matrix.python-version }}
     needs: build-wheels
@@ -139,35 +140,18 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install the wheel with numpy alone
+      - name: Install the built wheel with its real dependencies
         run: |
           uv venv
-          uv pip install numpy
-          # cibuildwheel emits both manylinux and musllinux wheels on Linux, so a
-          # glob is ambiguous; let the resolver pick the one this runner can use
-          uv pip install --no-deps --no-index --find-links wheelhouse spatial-graph
-      - name: Prebuilt rtrees must work without witty, Cheetah or a compiler
-        run: |
-          uv run --no-sync python -c "
-          import sys, numpy as np
-          try:
-              import witty; sys.exit('witty present; test is not conclusive')
-          except ImportError: pass
-          from spatial_graph import PointRTree
-          t = PointRTree('int64', 'float32', 3)
-          t.insert_point_items(np.array([1, 2], dtype='int64'),
-                               np.ascontiguousarray([[0,0,0],[9,9,9]], dtype='float32'))
-          mod = type(t._ctree).__module__
-          assert '_prebuilt' in mod, mod
-          found = t.search(np.array([0,0,0],'float32'), np.array([1,1,1],'float32'))
-          assert found.ravel().tolist() == [1], found
-          print('ok:', mod)"
-      # the test module imports the codegen (and so Cheetah); add it rather than
-      # reinstalling, so the wheel under test stays exactly as installed above
-      - name: Run the prebuilt test suite against the wheel
-        run: |
-          uv pip install pytest CT3
-          uv run --no-sync pytest tests/test_prebuilt.py -v
+          # pin the artifact's exact version so the resolver cannot prefer a
+          # PyPI release; --find-links then picks the manylinux or musllinux
+          # wheel this runner can use, and dependencies still come from the index
+          version=$(ls wheelhouse/*.whl | head -1 | sed -E 's/.*spatial_graph-([^-]+)-cp.*/\1/')
+          uv pip install --find-links wheelhouse "spatial-graph==$version" pytest
+      - name: Test it
+        # test_prebuilt.py asserts the real property directly: constructing a
+        # prebuilt variant must not reach witty.compile_cython
+        run: uv run --no-sync pytest tests/test_prebuilt.py -v
 
   deploy:
     name: Deploy
