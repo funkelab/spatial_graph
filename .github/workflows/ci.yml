@@ -140,14 +140,13 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
+      # Name the wheel directly: cibuildwheel emits a manylinux and a musllinux
+      # wheel, so a bare *.whl glob is ambiguous, while installing by package
+      # name would resolve `spatial-graph` from PyPI instead of this artifact.
       - name: Install the built wheel with its real dependencies
         run: |
           uv venv
-          # pin the artifact's exact version so the resolver cannot prefer a
-          # PyPI release; --find-links then picks the manylinux or musllinux
-          # wheel this runner can use, and dependencies still come from the index
-          version=$(ls wheelhouse/*.whl | head -1 | sed -E 's/.*spatial_graph-([^-]+)-cp.*/\1/')
-          uv pip install --find-links wheelhouse "spatial-graph==$version" pytest
+          uv pip install wheelhouse/*manylinux*.whl pytest
       - name: Test it
         # test_prebuilt.py asserts the real property directly: constructing a
         # prebuilt variant must not reach witty.compile_cython
@@ -155,7 +154,7 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: [test, test-abi3-wheel, build-sdist]
+    needs: [test, build-wheels, build-sdist, test-abi3-wheel]
     if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
     runs-on: ubuntu-latest
 
@@ -164,6 +163,7 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
