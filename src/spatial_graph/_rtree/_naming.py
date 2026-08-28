@@ -22,8 +22,8 @@ PREBUILT_PACKAGE = f"{__package__}._prebuilt"
 _FALSEY = {"", "0", "false", "no", "off"}
 
 
-def env_flag(name: str) -> bool:
-    """Whether an on/off environment variable is set.
+def env_enabled(name: str) -> bool:
+    """Whether the named on/off environment variable is switched on.
 
     `SPATIAL_GRAPH_NO_PREBUILT=0` should mean "no, don't skip prebuilding";
     plain truthiness would read it as "yes", since any non-empty string is

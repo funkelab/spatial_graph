@@ -9,7 +9,7 @@ import numpy as np
 
 from spatial_graph._dtypes import DType
 
-from ._naming import PREBUILT_PACKAGE, env_flag, module_name
+from ._naming import PREBUILT_PACKAGE, env_enabled, module_name
 
 DEFINE_MACROS = [("RTREE_NOATOMICS", "1")] if sys.platform == "win32" else []
 if sys.platform == "win32":  # pragma: no cover
@@ -24,7 +24,7 @@ def _load_prebuilt(
     cls: type[RTree], item_dtype: str, coord_dtype: str, dims: int
 ) -> type | None:
     """Return the ahead-of-time compiled tree class, or None if not shipped."""
-    if env_flag("SPATIAL_GRAPH_NO_PREBUILT"):
+    if env_enabled("SPATIAL_GRAPH_NO_PREBUILT"):
         return None
     name = module_name(cls, item_dtype, coord_dtype, dims)
     try:

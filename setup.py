@@ -25,7 +25,7 @@ ROOT = Path(__file__).parent
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
-from spatial_graph._rtree._naming import env_flag  # noqa: E402
+from spatial_graph._rtree._naming import env_enabled  # noqa: E402
 
 PREBUILT_PKG = "spatial_graph._rtree._prebuilt"
 
@@ -145,9 +145,9 @@ def should_prebuild() -> bool:
     """Whether to compile prebuilt variants into this wheel."""
     if metadata_only():
         return False
-    if env_flag("SPATIAL_GRAPH_NO_PREBUILT"):
+    if env_enabled("SPATIAL_GRAPH_NO_PREBUILT"):
         return False
-    if env_flag("SPATIAL_GRAPH_REQUIRE_PREBUILT"):
+    if env_enabled("SPATIAL_GRAPH_REQUIRE_PREBUILT"):
         return True  # CI: never let a build silently degrade
     if can_compile():
         return True
