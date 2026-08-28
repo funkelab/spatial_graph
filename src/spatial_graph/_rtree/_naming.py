@@ -1,4 +1,4 @@
-"""Deterministic naming for prebuilt RTree extension modules.
+"""Naming and switches for prebuilt RTree extension modules.
 
 Shared by the runtime lookup and `setup.py`, so the two can never disagree.
 Deliberately depends only on `_dtypes` -- it sits on the import path of every
@@ -8,6 +8,7 @@ Deliberately depends only on `_dtypes` -- it sits on the import path of every
 from __future__ import annotations
 
 import hashlib
+import os
 from typing import TYPE_CHECKING
 
 from spatial_graph._dtypes import DType
@@ -17,6 +18,19 @@ if TYPE_CHECKING:
 
 # subpackage holding ahead-of-time compiled modules; empty in a source checkout
 PREBUILT_PACKAGE = f"{__package__}._prebuilt"
+
+_FALSEY = {"", "0", "false", "no", "off"}
+
+
+def env_flag(name: str) -> bool:
+    """Whether an on/off environment variable is set.
+
+    `SPATIAL_GRAPH_NO_PREBUILT=0` should mean "no, don't skip prebuilding";
+    plain truthiness would read it as "yes", since any non-empty string is
+    true. Both the build and the runtime lookup go through here so they can
+    never read the same variable differently.
+    """
+    return os.environ.get(name, "").strip().lower() not in _FALSEY
 
 
 def _c_name(dtype: DType) -> str:

@@ -23,6 +23,10 @@ from setuptools import Extension, setup
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "src"
+sys.path.insert(0, str(SRC))
+
+from spatial_graph._rtree._naming import env_flag  # noqa: E402
+
 PREBUILT_PKG = "spatial_graph._rtree._prebuilt"
 
 # The wrappers pass numpy arrays as typed memoryviews, which compile to
@@ -40,7 +44,6 @@ def prebuilt_extensions() -> list[Extension]:
     """Render every prebuilt RTree variant and declare it as an extension."""
     from Cython.Build import cythonize
 
-    sys.path.insert(0, str(SRC))
     from spatial_graph._rtree._codegen import build_wrapper, iter_specs
     from spatial_graph._rtree._naming import module_name
 
@@ -112,11 +115,39 @@ def can_compile() -> bool:
     return True
 
 
+# Rendering and cythonizing every variant is wasted work for commands that only
+# want metadata -- without this, `build --sdist` pays for a full codegen pass.
+METADATA_ONLY = {"egg_info", "dist_info", "sdist"}
+NEEDS_EXTENSIONS = {
+    "bdist_egg",
+    "bdist_wheel",
+    "build",
+    "build_ext",
+    "build_py",
+    "develop",
+    "editable_wheel",
+    "install",
+}
+
+
+def metadata_only() -> bool:
+    """Whether this invocation asks for nothing that needs the extensions.
+
+    Matches on recognized command names only, so option values (`--dist-dir
+    /tmp/x`) are ignored, and anything unrecognized falls through to building
+    -- skipping wrongly would silently yield a wheel with no prebuilt modules.
+    """
+    seen = {arg for arg in sys.argv[1:] if arg in METADATA_ONLY | NEEDS_EXTENSIONS}
+    return bool(seen) and seen <= METADATA_ONLY
+
+
 def should_prebuild() -> bool:
     """Whether to compile prebuilt variants into this wheel."""
-    if os.getenv("SPATIAL_GRAPH_NO_PREBUILT"):
+    if metadata_only():
         return False
-    if os.getenv("SPATIAL_GRAPH_REQUIRE_PREBUILT"):
+    if env_flag("SPATIAL_GRAPH_NO_PREBUILT"):
+        return False
+    if env_flag("SPATIAL_GRAPH_REQUIRE_PREBUILT"):
         return True  # CI: never let a build silently degrade
     if can_compile():
         return True
