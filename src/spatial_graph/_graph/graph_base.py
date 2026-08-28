@@ -4,9 +4,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import witty
-from Cheetah.Template import Template
-
 from spatial_graph._dtypes import DType
 
 from .views import EdgeAttrs, NodeAttrs
@@ -75,6 +72,10 @@ def _build_wrapper(
     if not all(str.isidentifier(name) for name in edge_attr_dtypes):
         raise ValueError("Edge attribute names must be valid identifiers")
 
+    # imported here, not at module scope: it is only needed when something has
+    # to be compiled, and keeps `import spatial_graph` off Cheetah/Cython
+    from Cheetah.Template import Template
+
     wrapper_template = Template(
         file=str(SRC_DIR / "wrapper_template.pyx"),
         compilerSettings={"directiveStartToken": "%"},
@@ -99,6 +100,11 @@ def _compile_graph(
     edge_attr_dtypes: Mapping[str, str] | None = None,
     directed: bool = False,
 ) -> type:
+    # graph attribute dtypes are only known at runtime, so this half can never
+    # be prebuilt; witty is imported here so that merely importing spatial_graph
+    # does not pull in the compilation toolchain
+    import witty
+
     wrapper_template = _build_wrapper(
         node_dtype=node_dtype,
         node_attr_dtypes=node_attr_dtypes,

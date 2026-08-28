@@ -26,7 +26,8 @@ where each node has an nD position (in time or space).
     * attribute access
 * minimal memory footprint
 * minimal dependencies
-    * `cython` / `witty` / `cheetah3` for runtime compilation
+    * `cython` / `witty` / `cheetah3`, used only when something has to be
+      compiled at runtime (see Cross-Platform Support)
     * numpy for array interfaces
 * PYX API for graph algorithms in C/C++
 
@@ -116,16 +117,34 @@ A `SpatialGraph` consists of three data structures:
 
 ## Cross-Platform Support
 
-`spatial_graph` compiles C/C++ code at runtime, and as such needs access to a
-compiler. If you already have one, great! You can use the PyPI package.
+`spatial_graph` generates specialized C/C++ for the exact data types you ask
+for. Where those types can be known in advance we compile them ahead of time
+and ship them in the wheels; everything else is compiled on your machine the
+first time it is used, which needs a C compiler.
 
-If you (or your users) don't have a compiler installed, you either need to
+**No compiler needed.** The PyPI wheels contain prebuilt `PointRTree` and
+`LineRTree` variants for the common combinations: `float32`/`float64`
+coordinates, 2 to 5 dimensions, and `int64`/`uint64` items -- as `int64[2]` /
+`uint64[2]` for `LineRTree`, whose items are node pairs. If your R-tree matches
+one of those -- as most do -- nothing is compiled, on any supported Python.
 
-1. Install a compiler. This might be weird for non-technical users.
-2. Install `spatial_graph` from `conda-forge`, where we include a compiler
-   (`clang`) in its dependencies.
+**Compiler needed.** Two cases fall back to compiling at runtime:
 
-### Why is this so complicated?
+1. `Graph`, `DiGraph`, `SpatialGraph` and `SpatialDiGraph`. Their node and edge
+   attribute types are only known when you construct the graph, so they cannot
+   be enumerated ahead of time.
+2. R-trees outside the prebuilt set above (an `int32` item type, say, or 6
+   dimensions).
+
+If you or your users need those without a compiler, you can still install
+`spatial_graph` from `conda-forge`, where we include a compiler (`clang`) in
+its dependencies.
+
+The wheels are `abi3` (stable ABI) and require Python 3.11 or newer, so one
+wheel per platform covers every supported CPython. Python 3.10 users should
+pin to a release before this one.
+
+### Why can't everything be prebuilt?
 
 There is no cross-platform C/C++ compiler that we can install using `pip`.
 [`numba`](https://github.com/numba/numba) is maybe the closest to having solved

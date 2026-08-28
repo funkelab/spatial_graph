@@ -1,17 +1,34 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
+requires = [
+  "setuptools>=77",
+  "setuptools-scm>=8",
+  "Cython>=3.1",
+  "CT3>=3.3.3",
+  "numpy",  # imported (not linked) while rendering the wrappers
+]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.version]
-source = "vcs"
+[tool.setuptools_scm]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# The JIT fallback compiles from these at runtime, so they must ship in the
+# wheel. `include-package-data` (on by default here) would pick them up from
+# the VCS/sdist manifest anyway; listing them keeps that explicit and works
+# even when no file finder is available. Patterns are package-relative, so the
+# vendored C under `_rtree/src/` and `_graph/src/` needs the `src/` prefix.
+"*" = ["py.typed", "*.pyx", "src/*.c", "src/*.h", "src/LICENSE*", "src/*.md"]
 
 [project]
 name = "spatial-graph"
 dynamic = ["version"]
 description = "A spatial graph datastructure for python."
 readme = "README.md"
-requires-python = ">=3.10"
-license = { text = "MIT" }
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
   { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
   { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
@@ -19,8 +36,6 @@ authors = [
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -33,8 +48,7 @@ dependencies = [
   "numpy>=2.3.2; python_version >= '3.14'",
   "numpy>=2.1.0; python_version >= '3.13'",
   "numpy>=1.26.0; python_version >= '3.12'",
-  "numpy>=1.23.2; python_version >= '3.11'",
-  "numpy>=1.21.2",
+  "numpy>=1.23.2",
   "setuptools>=75.8.0",
   "typing_extensions>=4.5.0",  # witty<=0.3.1 imports it without declaring it
 ]
@@ -63,8 +77,18 @@ docs = [
 homepage = "https://github.com/funkelab/spatial_graph"
 repository = "https://github.com/funkelab/spatial_graph"
 
+[tool.cibuildwheel]
+# a single abi3 build per platform covers every supported CPython
+build = "cp311-*"
+# never let a wheel silently degrade to pure Python
+environment = { SPATIAL_GRAPH_REQUIRE_PREBUILT = "1" }
+test-groups = ["test"]
+# these exercise the prebuilt modules in the repaired wheel without needing a
+# compiler; cross-version and numpy-only checks live in the CI workflow
+test-command = "pytest {project}/tests/test_prebuilt.py -q"
+
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 88
 fix = true
 unsafe-fixes = true
