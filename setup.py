@@ -23,10 +23,6 @@ from setuptools import Extension, setup
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "src"
-sys.path.insert(0, str(SRC))
-
-from spatial_graph._rtree._naming import env_enabled  # noqa: E402
-
 PREBUILT_PKG = "spatial_graph._rtree._prebuilt"
 
 # The wrappers pass numpy arrays as typed memoryviews, which compile to
@@ -40,10 +36,23 @@ ABI3_HEX = f"0x{ABI3_MIN[0]:02x}{ABI3_MIN[1]:02x}0000"
 WIN = sys.platform == "win32"
 
 
+def _src_on_path() -> None:
+    """Make the package under `src/` importable, for the helpers shared with it.
+
+    Callers import `spatial_graph` only once they know they need it: importing
+    it at module scope would make every command -- `sdist` and `egg_info`
+    included -- fail if anything the package imports is missing from the build
+    environment.
+    """
+    if str(SRC) not in sys.path:
+        sys.path.insert(0, str(SRC))
+
+
 def prebuilt_extensions() -> list[Extension]:
     """Render every prebuilt RTree variant and declare it as an extension."""
     from Cython.Build import cythonize
 
+    _src_on_path()
     from spatial_graph._rtree._codegen import build_wrapper, iter_specs
     from spatial_graph._rtree._naming import module_name
 
@@ -145,6 +154,10 @@ def should_prebuild() -> bool:
     """Whether to compile prebuilt variants into this wheel."""
     if metadata_only():
         return False
+
+    _src_on_path()
+    from spatial_graph._rtree._naming import env_enabled
+
     if env_enabled("SPATIAL_GRAPH_NO_PREBUILT"):
         return False
     if env_enabled("SPATIAL_GRAPH_REQUIRE_PREBUILT"):

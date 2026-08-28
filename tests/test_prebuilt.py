@@ -8,14 +8,12 @@ the very regression we want to catch.
 
 from __future__ import annotations
 
-import os
-
 import numpy as np
 import pytest
 
 from spatial_graph import PointRTree
 from spatial_graph._rtree._codegen import iter_specs
-from spatial_graph._rtree._naming import module_name
+from spatial_graph._rtree._naming import env_enabled, module_name
 from spatial_graph._rtree.rtree import _load_prebuilt
 
 # the `_prebuilt` package always exists but is empty in a source checkout, so
@@ -28,8 +26,8 @@ requires_prebuilt = pytest.mark.skipif(
 
 def test_prebuilt_modules_were_shipped():
     """Guard against a wheel that silently degraded to pure Python."""
-    if not os.getenv("SPATIAL_GRAPH_REQUIRE_PREBUILT"):
-        pytest.skip("SPATIAL_GRAPH_REQUIRE_PREBUILT not set")
+    if not env_enabled("SPATIAL_GRAPH_REQUIRE_PREBUILT"):
+        pytest.skip("SPATIAL_GRAPH_REQUIRE_PREBUILT not enabled")
     assert has_prebuilt, "install shipped no prebuilt rtree modules"
 
 
