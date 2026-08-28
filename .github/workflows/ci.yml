@@ -143,7 +143,9 @@ jobs:
         run: |
           uv venv
           uv pip install numpy
-          uv pip install --no-deps wheelhouse/*.whl
+          # cibuildwheel emits both manylinux and musllinux wheels on Linux, so a
+          # glob is ambiguous; let the resolver pick the one this runner can use
+          uv pip install --no-deps --no-index --find-links wheelhouse spatial-graph
       - name: Prebuilt rtrees must work without witty, Cheetah or a compiler
         run: |
           uv run --no-sync python -c "
@@ -160,11 +162,11 @@ jobs:
           found = t.search(np.array([0,0,0],'float32'), np.array([1,1,1],'float32'))
           assert found.ravel().tolist() == [1], found
           print('ok:', mod)"
-      # the test module imports the codegen (and so Cheetah), so pull the real
-      # dependency set back in before running the suite
+      # the test module imports the codegen (and so Cheetah); add it rather than
+      # reinstalling, so the wheel under test stays exactly as installed above
       - name: Run the prebuilt test suite against the wheel
         run: |
-          uv pip install wheelhouse/*.whl pytest
+          uv pip install pytest CT3
           uv run --no-sync pytest tests/test_prebuilt.py -v
 
   deploy:
