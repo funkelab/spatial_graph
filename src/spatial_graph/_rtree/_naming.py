@@ -1,8 +1,9 @@
 """Naming and switches for prebuilt RTree extension modules.
 
 Shared by the runtime lookup and `setup.py`, so the two can never disagree.
-Deliberately depends only on `_dtypes` -- it sits on the import path of every
-`PointRTree`, including installs with neither Cheetah nor witty available.
+Deliberately depends only on `_dtypes`: it sits on the import path of every
+`PointRTree`, and importing Cheetah or witty here would pull the compilation
+toolchain into the common case, which is the whole thing prebuilding avoids.
 """
 
 from __future__ import annotations

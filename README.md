@@ -123,8 +123,9 @@ and ship them in the wheels; everything else is compiled on your machine the
 first time it is used, which needs a C compiler.
 
 **No compiler needed.** The PyPI wheels contain prebuilt `PointRTree` and
-`LineRTree` variants for the common combinations: `int64`/`uint64` items,
-`float32`/`float64` coordinates, and 2 to 5 dimensions. If your R-tree matches
+`LineRTree` variants for the common combinations: `float32`/`float64`
+coordinates, 2 to 5 dimensions, and `int64`/`uint64` items -- as `int64[2]` /
+`uint64[2]` for `LineRTree`, whose items are node pairs. If your R-tree matches
 one of those -- as most do -- nothing is compiled, on any supported Python.
 
 **Compiler needed.** Two cases fall back to compiling at runtime:

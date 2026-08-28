@@ -112,13 +112,12 @@ def can_compile() -> bool:
         with tempfile.TemporaryDirectory() as tmp:
             probe = Path(tmp, "probe.c")
             probe.write_text("#include <Python.h>\nint main(void) { return 0; }\n")
-            compiler.compile(
-                [str(probe)],
-                output_dir=tmp,
-                # get_python_inc, not sysconfig: inside a venv the latter
-                # points at the venv, which holds no headers
-                include_dirs=[get_python_inc()],
-            )
+            # mirror build_ext, which passes both include dirs when the
+            # platform-specific one differs (that is where pyconfig.h can live)
+            includes = [get_python_inc()]
+            if (plat_inc := get_python_inc(plat_specific=True)) not in includes:
+                includes.append(plat_inc)
+            compiler.compile([str(probe)], output_dir=tmp, include_dirs=includes)
     except Exception:
         return False
     return True
