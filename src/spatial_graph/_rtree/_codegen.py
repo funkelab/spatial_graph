@@ -25,14 +25,14 @@ if TYPE_CHECKING:
 
 TEMPLATE = Path(__file__).parent / "wrapper_template.pyx"
 
-# Variants compiled ahead of time into binary wheels. `PointRTree` is what makes
-# a compiler unnecessary for rtree-only users; `LineRTree` is only reached via
-# `SpatialGraph`, whose graph half is JIT-compiled regardless, so prebuilding it
-# saves first-use compile time rather than removing a requirement.
+# Variants compiled ahead of time into binary wheels. Both tree classes are
+# public API and usable on their own, so both are prebuilt: it is what lets an
+# rtree-only user install without a C compiler. Trimming the matrix means
+# dropping entries below; `SPATIAL_GRAPH_NO_PREBUILT=1` skips prebuilding
+# entirely, for machines that cannot compile at build time.
 ITEM_BASES = ("int64", "uint64")
 COORD_DTYPES = ("float32", "float64")
 DIMS = (2, 3, 4, 5)
-PREBUILT_LINE_TREES = True
 
 
 class Spec(NamedTuple):
@@ -48,8 +48,7 @@ def iter_specs() -> Iterator[Spec]:
         for coord in COORD_DTYPES:
             for dims in DIMS:
                 yield Spec(PointRTree, base, coord, dims)
-                if PREBUILT_LINE_TREES:
-                    yield Spec(LineRTree, f"{base}[2]", coord, dims)
+                yield Spec(LineRTree, f"{base}[2]", coord, dims)
 
 
 def build_wrapper(
