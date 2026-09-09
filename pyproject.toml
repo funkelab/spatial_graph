@@ -2,7 +2,14 @@
 requires = [
   "setuptools>=77",
   "setuptools-scm>=8",
-  "Cython>=3.1",
+  # Cython 3.3.0 makes the __pyx_CyFunctionObject layout depend on the
+  # limited-API target (an extra func_is_coroutine field below 0x030B0000)
+  # without reflecting that in the name of the module its shared types live in,
+  # so our cp311 modules collide with any cp310 abi3 module built by the same
+  # Cython -- uharfbuzz >=0.56.1, via pygfx -- and whichever imports second dies
+  # with "Shared Cython type ... has the wrong size". Fixed in cython/cython#7916
+  # (unreleased at time of writing), so this skips the one bad release.
+  "Cython>=3.1,!=3.3.0",
   "CT3>=3.3.3",
   "numpy",  # imported (not linked) while rendering the wrappers
 ]

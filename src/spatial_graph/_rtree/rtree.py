@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import sys
+import warnings
 from pathlib import Path
 from typing import ClassVar
 
@@ -30,6 +31,20 @@ def _load_prebuilt(
     try:
         module = importlib.import_module(f"{PREBUILT_PACKAGE}.{name}")
     except ImportError:
+        return None
+    except TypeError as e:  # pragma: no cover
+        # A Cython module already loaded in this process can claim the same
+        # shared-ABI module name as ours while disagreeing about the layout of
+        # the types in it, and the loser of that race is whoever imports second
+        # ("Shared Cython type ... has the wrong size"). Falling back to the JIT
+        # path costs a compiler, but beats taking the process down.
+        warnings.warn(
+            f"Could not import prebuilt {name} ({e}); compiling it instead. "
+            "This usually means another extension module in this process was "
+            "built against an incompatible Cython ABI.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
         return None
     return module.RTree
 
